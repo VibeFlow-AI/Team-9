@@ -11,8 +11,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/axios";
-import type { Item } from "@/types/item";
 import { useState } from "react";
+
+// Define the Item type or import it from the appropriate module
+interface Item {
+  id: string;
+  name: string;
+  // Add other fields as needed
+}
 
 interface AddItemDialogProps {
   isOpen: boolean;
