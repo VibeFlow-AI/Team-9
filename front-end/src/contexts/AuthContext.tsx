@@ -23,7 +23,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const { state } = useAppContext()
-  const { setUser, logout: logoutUser, setError } = useAppActions()
+  const { setUser, logoutUser, setError } = useAppActions()
   const [isLoading, setIsLoading] = useState(false)
 
   const { data: session, isPending } = authClient.useSession()

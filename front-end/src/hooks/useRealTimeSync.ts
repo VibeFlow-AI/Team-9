@@ -41,8 +41,9 @@ export function useRealTimeSync(options?: {
       }
 
       // Update sync time
-      syncData()
-      lastSyncRef.current = Date.now()
+      const now = Date.now()
+      syncData({ timestamp: now })
+      lastSyncRef.current = now
       
     } catch (error) {
       console.error('Sync failed:', error)

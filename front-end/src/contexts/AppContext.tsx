@@ -321,6 +321,8 @@ export const useAppContext = () => {
 export const useAppActions = () => {
   const { dispatch } = useAppContext();
 
+  const { state } = useAppContext();
+
   return useMemo(() => ({
     setUser: (payload: User | null) => dispatch({ type: 'SET_USER', payload }),
     logoutUser: () => dispatch({ type: 'LOGOUT_USER' }),
@@ -338,5 +340,19 @@ export const useAppActions = () => {
     setLoading: (payload: boolean) => dispatch({ type: 'SET_LOADING', payload }),
     setError: (payload: string | null) => dispatch({ type: 'SET_ERROR', payload }),
     clearError: () => dispatch({ type: 'CLEAR_ERROR' }),
-  }), [dispatch]);
+    checkSlotAvailability: (
+      mentorId: string,
+      date: string,
+      time: string
+    ): boolean => {
+      // Check if the slot is already booked
+      return !state.bookedSessions.some(
+        session =>
+          session.mentor.id === mentorId &&
+          session.date === date &&
+          session.time === time &&
+          session.status !== 'cancelled'
+      );
+    },
+  }), [dispatch, state]);
 };
