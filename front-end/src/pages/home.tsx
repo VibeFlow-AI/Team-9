@@ -3,7 +3,7 @@ import { ItemCard } from "@/components/item-card";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/axios";
 import type { Item } from "@/types/item";
-import { AlertCircle, Archive, Plus, RotateCcw } from "lucide-react";
+import { AlertCircle, Plus, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 
 function HomePage() {
