@@ -11,12 +11,33 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { BookOpen, User, GraduationCap, Link } from "lucide-react"
 import { useNavigate } from "react-router"
+import axios from "axios"
+
+// Add enums to match Prisma schema exactly
+enum Language {
+  ENGLISH = "ENGLISH",
+  SINHALA = "SINHALA",
+  TAMIL = "TAMIL",
+  OTHER = "OTHER"
+}
+
+enum Experience {
+  NONE = "NONE",
+  ONE_TO_THREE_YEARS = "ONE_TO_THREE_YEARS",
+  THREE_TO_FIVE_YEARS = "THREE_TO_FIVE_YEARS",
+  FIVE_PLUS_YEARS = "FIVE_PLUS_YEARS"
+}
+
+enum EducationLevel {
+  GRADE_9 = "GRADE_9",
+  ORDINARY_LEVEL = "ORDINARY_LEVEL",
+  ADVANCED_LEVEL = "ADVANCED_LEVEL",
+  UNIVERSITY = "UNIVERSITY"
+}
 
 interface MentorData {
   // Part 1: Personal Information
-  fullName: string
   age: string
-  email: string
   contactNumber: string
   preferredLanguage: string
   currentLocation: string
@@ -24,96 +45,143 @@ interface MentorData {
   professionalRole: string
 
   // Part 2: Areas of Expertise
-  subjects: string[]
-  experience: string
-  preferredLevels: string[]
+  subjectsToTeach: string[]
+  teachingExperience: string
+  preferredStudentLevels: string[]
 
   // Part 3: Social & Professional Links
   linkedinProfile: string
-  portfolioUrl: string
-  profilePicture: string
+  githubPortfolio: string
+  profilePictureUrl: string
 }
 
 export default function MentorOnboarding() {
   const [currentStep, setCurrentStep] = useState(1)
   const [mentorData, setMentorData] = useState<MentorData>({
-    fullName: "",
     age: "",
-    email: "",
     contactNumber: "",
     preferredLanguage: "",
     currentLocation: "",
     shortBio: "",
     professionalRole: "",
-    subjects: [],
-    experience: "",
-    preferredLevels: [],
+    subjectsToTeach: [],
+    teachingExperience: "",
+    preferredStudentLevels: [],
     linkedinProfile: "",
-    portfolioUrl: "",
-    profilePicture: "",
+    githubPortfolio: "",
+    profilePictureUrl: ""
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const navigate = useNavigate()
   const totalSteps = 3
   const progress = (currentStep / totalSteps) * 100
 
   const handleInputChange = (field: keyof MentorData, value: any) => {
-    setMentorData((prev) => ({ ...prev, [field]: value }))
+    setMentorData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleSubjectChange = (subject: string, checked: boolean) => {
-    setMentorData((prev) => ({
-      ...prev,
-      subjects: checked ? [...prev.subjects, subject] : prev.subjects.filter((s) => s !== subject),
-    }))
-  }
-
-  const handleLevelChange = (level: string, checked: boolean) => {
-    setMentorData((prev) => ({
-      ...prev,
-      preferredLevels: checked ? [...prev.preferredLevels, level] : prev.preferredLevels.filter((l) => l !== level),
-    }))
-  }
-
-  const nextStep = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1)
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      return;
     }
-  }
 
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
+    setIsSubmitting(true)
+    try {
+      // Transform data to match Prisma schema
+      const mentorDataForSubmit = {
+        age: parseInt(mentorData.age),
+        contactNumber: mentorData.contactNumber,
+        preferredLanguage: mentorData.preferredLanguage as Language,
+        currentLocation: mentorData.currentLocation,
+        shortBio: mentorData.shortBio,
+        professionalRole: mentorData.professionalRole,
+        subjectsToTeach: mentorData.subjectsToTeach,
+        teachingExperience: mapExperienceToEnum(mentorData.teachingExperience),
+        preferredStudentLevels: mentorData.preferredStudentLevels.map(level => mapEducationLevel(level)),
+        linkedinProfile: mentorData.linkedinProfile,
+        githubPortfolio: mentorData.githubPortfolio || null,
+        profilePictureUrl: mentorData.profilePictureUrl || null,
+        isActive: true
+      };
+
+      // Send data to backend
+      await axios.post(
+        "http://localhost:3000/api/v1/users/mentor/onboard",
+        mentorDataForSubmit,
+        {
+          headers: { 
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      navigate("/mentor/dashboard");
+    } catch (err) {
+      console.error("Failed to complete onboarding:", err);
+      alert("Failed to complete onboarding. Please check your data and try again.");
+    } finally {
+      setIsSubmitting(false)
     }
-  }
+  };
 
-  const handleSubmit = () => {
-    // Save mentor data and redirect to dashboard
-    localStorage.setItem("mentorData", JSON.stringify(mentorData))
-    localStorage.setItem("userRole", "mentor")
-    navigate("/mentor/dashboard")
-  }
+  const validateForm = (): boolean => {
+    // Basic validation
+    if (!mentorData.age || parseInt(mentorData.age) < 18) {
+      alert("Age must be 18 or older");
+      return false;
+    }
+    if (!mentorData.preferredLanguage) {
+      alert("Please select your preferred language");
+      return false;
+    }
+    if (!mentorData.shortBio || mentorData.shortBio.length < 50) {
+      alert("Please provide a detailed bio (minimum 50 characters)");
+      return false;
+    }
+    if (mentorData.subjectsToTeach.length === 0) {
+      alert("Please select at least one subject to teach");
+      return false;
+    }
+    if (!mentorData.teachingExperience) {
+      alert("Please select your teaching experience");
+      return false;
+    }
+    if (mentorData.preferredStudentLevels.length === 0) {
+      alert("Please select at least one student level");
+      return false;
+    }
+    if (!mentorData.linkedinProfile || !mentorData.linkedinProfile.includes('linkedin.com')) {
+      alert("Please provide a valid LinkedIn profile URL");
+      return false;
+    }
+    return true;
+  };
+
+  const mapExperienceToEnum = (exp: string): Experience => {
+    const map: { [key: string]: Experience } = {
+      'none': Experience.NONE,
+      '1-3': Experience.ONE_TO_THREE_YEARS,
+      '3-5': Experience.THREE_TO_FIVE_YEARS,
+      '5+': Experience.FIVE_PLUS_YEARS
+    };
+    return map[exp] || Experience.NONE;
+  };
+
+  const mapEducationLevel = (level: string): EducationLevel => {
+    const map: { [key: string]: EducationLevel } = {
+      'Grade 9': EducationLevel.GRADE_9,
+      'Ordinary Level': EducationLevel.ORDINARY_LEVEL,
+      'Advanced Level': EducationLevel.ADVANCED_LEVEL,
+      'University': EducationLevel.UNIVERSITY
+    };
+    return map[level] || EducationLevel.UNIVERSITY;
+  };
 
   const renderStep1 = () => (
     <div className="space-y-6">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <User className="w-8 h-8 text-white" />
-        </div>
-        <h2 className="text-2xl font-bold mb-2">Personal Information</h2>
-        <p className="text-gray-600">Tell us about yourself</p>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <Label htmlFor="fullName">Full Name *</Label>
-          <Input
-            id="fullName"
-            value={mentorData.fullName}
-            onChange={(e) => handleInputChange("fullName", e.target.value)}
-            placeholder="Enter your full name"
-          />
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="age">Age *</Label>
           <Input
@@ -122,28 +190,20 @@ export default function MentorOnboarding() {
             value={mentorData.age}
             onChange={(e) => handleInputChange("age", e.target.value)}
             placeholder="Enter your age"
+            min="18"
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="email">Email Address *</Label>
-          <Input
-            id="email"
-            type="email"
-            value={mentorData.email}
-            onChange={(e) => handleInputChange("email", e.target.value)}
-            placeholder="Enter your email"
-          />
-        </div>
+
         <div className="space-y-2">
           <Label htmlFor="contactNumber">Contact Number *</Label>
           <Input
             id="contactNumber"
-            type="tel"
             value={mentorData.contactNumber}
             onChange={(e) => handleInputChange("contactNumber", e.target.value)}
             placeholder="Enter your contact number"
           />
         </div>
+
         <div className="space-y-2">
           <Label htmlFor="preferredLanguage">Preferred Language *</Label>
           <Select
@@ -154,13 +214,14 @@ export default function MentorOnboarding() {
               <SelectValue placeholder="Select your preferred language" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="english">English</SelectItem>
-              <SelectItem value="sinhala">Sinhala</SelectItem>
-              <SelectItem value="tamil">Tamil</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
+              <SelectItem value={Language.ENGLISH}>English</SelectItem>
+              <SelectItem value={Language.SINHALA}>Sinhala</SelectItem>
+              <SelectItem value={Language.TAMIL}>Tamil</SelectItem>
+              <SelectItem value={Language.OTHER}>Other</SelectItem>
             </SelectContent>
           </Select>
         </div>
+
         <div className="space-y-2">
           <Label htmlFor="currentLocation">Current Location *</Label>
           <Input
@@ -178,7 +239,7 @@ export default function MentorOnboarding() {
           id="shortBio"
           value={mentorData.shortBio}
           onChange={(e) => handleInputChange("shortBio", e.target.value)}
-          placeholder="Introduce yourself in 2-3 sentences"
+          placeholder="Introduce yourself and your teaching experience (minimum 50 characters)"
           rows={3}
         />
       </div>
@@ -197,70 +258,77 @@ export default function MentorOnboarding() {
 
   const renderStep2 = () => (
     <div className="space-y-6">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <GraduationCap className="w-8 h-8 text-white" />
+      <div className="space-y-4">
+        <Label>Subjects to Teach *</Label>
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            "Mathematics",
+            "Physics",
+            "Chemistry",
+            "Biology",
+            "English",
+            "Computer Science",
+            "History",
+            "Geography"
+          ].map((subject) => (
+            <div key={subject} className="flex items-center space-x-2">
+              <Checkbox
+                id={subject}
+                checked={mentorData.subjectsToTeach.includes(subject)}
+                onCheckedChange={(checked) => {
+                  const newSubjects = checked
+                    ? [...mentorData.subjectsToTeach, subject]
+                    : mentorData.subjectsToTeach.filter(s => s !== subject);
+                  handleInputChange("subjectsToTeach", newSubjects);
+                }}
+              />
+              <Label htmlFor={subject}>{subject}</Label>
+            </div>
+          ))}
         </div>
-        <h2 className="text-2xl font-bold mb-2">Areas of Expertise</h2>
-        <p className="text-gray-600">Share your teaching expertise</p>
       </div>
 
-      <div className="space-y-6">
-        <div className="space-y-3">
-          <Label>Subjects you are planning to teach *</Label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {[
-              "Biology",
-              "Physics",
-              "Chemistry",
-              "Mathematics",
-              "English",
-              "History",
-              "Geography",
-              "Economics",
-              "Computer Science",
-            ].map((subject) => (
-              <div key={subject} className="flex items-center space-x-2">
-                <Checkbox
-                  id={subject}
-                  checked={mentorData.subjects.includes(subject)}
-                  onCheckedChange={(checked) => handleSubjectChange(subject, checked as boolean)}
-                />
-                <Label htmlFor={subject}>{subject}</Label>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="experience">Teaching Experience *</Label>
+        <Select
+          value={mentorData.teachingExperience}
+          onValueChange={(value) => handleInputChange("teachingExperience", value)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select your experience level" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">No Experience</SelectItem>
+            <SelectItem value="1-3">1-3 Years</SelectItem>
+            <SelectItem value="3-5">3-5 Years</SelectItem>
+            <SelectItem value="5+">5+ Years</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="experience">Teaching/Training Experience *</Label>
-          <Select value={mentorData.experience} onValueChange={(value) => handleInputChange("experience", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select your experience level" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">None</SelectItem>
-              <SelectItem value="1-3">1-3 years</SelectItem>
-              <SelectItem value="3-5">3-5 years</SelectItem>
-              <SelectItem value="5+">5+ years</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-3">
-          <Label>Preferred Level of Students *</Label>
-          <div className="grid grid-cols-2 gap-4">
-            {["Grade 3-5", "Grade 6-9", "Grade 10-11", "Advanced Level"].map((level) => (
-              <div key={level} className="flex items-center space-x-2">
-                <Checkbox
-                  id={level}
-                  checked={mentorData.preferredLevels.includes(level)}
-                  onCheckedChange={(checked) => handleLevelChange(level, checked as boolean)}
-                />
-                <Label htmlFor={level}>{level}</Label>
-              </div>
-            ))}
-          </div>
+      <div className="space-y-3">
+        <Label>Preferred Level of Students *</Label>
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            { value: "Grade 9", label: "Grade 9" },
+            { value: "Ordinary Level", label: "Ordinary Level" },
+            { value: "Advanced Level", label: "Advanced Level" },
+            { value: "University", label: "University" }
+          ].map((level) => (
+            <div key={level.value} className="flex items-center space-x-2">
+              <Checkbox
+                id={level.value}
+                checked={mentorData.preferredStudentLevels.includes(level.value)}
+                onCheckedChange={(checked) => {
+                  const newLevels = checked
+                    ? [...mentorData.preferredStudentLevels, level.value]
+                    : mentorData.preferredStudentLevels.filter(l => l !== level.value);
+                  handleInputChange("preferredStudentLevels", newLevels);
+                }}
+              />
+              <Label htmlFor={level.value}>{level.label}</Label>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -268,97 +336,74 @@ export default function MentorOnboarding() {
 
   const renderStep3 = () => (
     <div className="space-y-6">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Link className="w-8 h-8 text-white" />
-        </div>
-        <h2 className="text-2xl font-bold mb-2">Social & Professional Links</h2>
-        <p className="text-gray-600">Help students learn more about you</p>
+      <div className="space-y-2">
+        <Label htmlFor="linkedinProfile">LinkedIn Profile URL *</Label>
+        <Input
+          id="linkedinProfile"
+          type="url"
+          value={mentorData.linkedinProfile}
+          onChange={(e) => handleInputChange("linkedinProfile", e.target.value)}
+          placeholder="https://www.linkedin.com/in/your-profile"
+        />
       </div>
 
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="linkedinProfile">LinkedIn Profile *</Label>
-          <Input
-            id="linkedinProfile"
-            type="url"
-            value={mentorData.linkedinProfile}
-            onChange={(e) => handleInputChange("linkedinProfile", e.target.value)}
-            placeholder="https://linkedin.com/in/yourprofile"
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="githubPortfolio">GitHub Portfolio URL (Optional)</Label>
+        <Input
+          id="githubPortfolio"
+          type="url"
+          value={mentorData.githubPortfolio}
+          onChange={(e) => handleInputChange("githubPortfolio", e.target.value)}
+          placeholder="https://github.com/your-username"
+        />
+      </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="portfolioUrl">GitHub or Portfolio (Optional)</Label>
-          <Input
-            id="portfolioUrl"
-            type="url"
-            value={mentorData.portfolioUrl}
-            onChange={(e) => handleInputChange("portfolioUrl", e.target.value)}
-            placeholder="https://github.com/yourusername or your portfolio URL"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="profilePicture">Upload Profile Picture</Label>
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-              <User className="w-8 h-8 text-gray-400" />
-            </div>
-            <p className="text-gray-600 mb-2">Click to upload your profile picture</p>
-            <Input type="file" accept="image/*" className="hidden" />
-            <Button variant="outline">Choose File</Button>
-          </div>
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="profilePictureUrl">Profile Picture URL (Optional)</Label>
+        <Input
+          id="profilePictureUrl"
+          type="url"
+          value={mentorData.profilePictureUrl}
+          onChange={(e) => handleInputChange("profilePictureUrl", e.target.value)}
+          placeholder="https://example.com/your-picture.jpg"
+        />
       </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center space-x-2 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-600 rounded-lg flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              EduVibe
-            </span>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+      <div className="max-w-3xl mx-auto">
+        <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold mb-2">Mentor Onboarding</h1>
-          <p className="text-gray-600">
-            Step {currentStep} of {totalSteps}
-          </p>
+          <p className="text-gray-600">Step {currentStep} of {totalSteps}</p>
           <Progress value={progress} className="mt-4" />
         </div>
 
-        <Card className="shadow-2xl">
-          <CardHeader>
-            <CardTitle className="text-center">Complete Your Mentor Profile</CardTitle>
-          </CardHeader>
-          <CardContent className="p-8">
+        <Card>
+          <CardContent className="pt-6">
             {currentStep === 1 && renderStep1()}
             {currentStep === 2 && renderStep2()}
             {currentStep === 3 && renderStep3()}
 
-            <div className="flex justify-between mt-8">
-              <Button variant="outline" onClick={prevStep} disabled={currentStep === 1} className="px-8 bg-transparent">
+            <div className="flex justify-between mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStep(prev => prev - 1)}
+                disabled={currentStep === 1}
+              >
                 Previous
               </Button>
               {currentStep < totalSteps ? (
-                <Button
-                  onClick={nextStep}
-                  className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 px-8"
-                >
+                <Button onClick={() => setCurrentStep(prev => prev + 1)}>
                   Next
                 </Button>
               ) : (
-                <Button
+                <Button 
                   onClick={handleSubmit}
-                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 px-8"
+                  disabled={isSubmitting}
                 >
-                  Complete Onboarding
+                  {isSubmitting ? "Submitting..." : "Complete Onboarding"}
                 </Button>
               )}
             </div>
