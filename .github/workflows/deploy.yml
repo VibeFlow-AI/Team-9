@@ -1,0 +1,40 @@
+name: Deploy to Vibeflow-Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Vibeflow-Server
+    runs-on: [self-hosted, vibeflow-server]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env file
+        run: |
+          echo "BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}" >> ./back-end/.env
+          echo "BETTER_AUTH_URL=${{ secrets.BETTER_AUTH_URL }}" >> ./back-end/.env
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> ./back-end/.env
+          echo "GH_CLIENT_ID=${{ secrets.GH_CLIENT_ID }}" >> ./back-end/.env
+          echo "GH_CLIENT_SECRET=${{ secrets.GH_CLIENT_SECRET }}" >> ./back-end/.env
+
+      - name: Set up project directory
+        run: |
+          rm -rf ~/vibeflow-backend
+          mkdir -p ~/vibeflow-backend
+          cp -r . ~/vibeflow-backend
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ~/vibeflow-backend/back-end
+
+      - name: Run development server
+        run: npm run dev
+        working-directory: ~/vibeflow-backend/back-end
