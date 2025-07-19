@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import type { ReactNode } from 'react'
 import { useAppActions, useAppContext } from './AppContext'
 import type { User } from './AppContext'
+import { authClient } from '../lib/auth-client'
 
 interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
@@ -25,146 +26,96 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const { setUser, logout: logoutUser, setError } = useAppActions()
   const [isLoading, setIsLoading] = useState(false)
 
-  const isAuthenticated = !!state.user?.isAuthenticated
+  const { data: session, isPending } = authClient.useSession()
+
+  const isAuthenticated = !!session?.user
+
+  useEffect(() => {
+    if (session?.user) {
+      // Map Better Auth user to your User type
+      setUser({
+        id: session.user.id,
+        fullName: session.user.name || '',
+        email: session.user.email,
+        role: 'student', // Default to 'student' as role is not in Better Auth user
+        profilePicture: session.user.image,
+        isAuthenticated: true,
+      })
+    } else if (!isPending) {
+      setUser(null)
+    }
+  }, [session, setUser, isPending])
 
   const login = async (email: string, password: string): Promise<void> => {
+    setIsLoading(true)
+    setError(null)
     try {
-      setIsLoading(true)
-      setError(null)
-      
-      // TODO: Replace with actual API call
-      // For now, simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Mock user data - replace with actual API response
-      const mockUser: User = {
-        id: '1',
-        fullName: 'John Doe',
-        email: email,
-        role: 'student',
-        isAuthenticated: true,
+      const { error } = await authClient.signIn.email({ email, password })
+      if (error) {
+        setError(error.message)
+        throw new Error(error.message)
       }
-      
-      setUser(mockUser)
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Login failed')
-      throw error
+      // Session will update automatically via useSession hook
+    } catch (err: any) {
+      // Error is set, rethrow for component
+      throw err
     } finally {
       setIsLoading(false)
     }
   }
 
   const signup = async (
-    email: string, 
-    password: string, 
-    fullName: string, 
+    email: string,
+    password: string,
+    fullName: string,
     role: 'student' | 'mentor'
   ): Promise<void> => {
+    setIsLoading(true)
+    setError(null)
     try {
-      setIsLoading(true)
-      setError(null)
-      
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Mock user data - replace with actual API response
-      const mockUser: User = {
-        id: Date.now().toString(),
-        fullName: fullName,
-        email: email,
-        role: role,
-        isAuthenticated: true,
+      const { error } = await authClient.signUp.email({
+        email,
+        password,
+        name: fullName,
+      })
+      if (error) {
+        setError(error.message)
+        throw new Error(error.message)
       }
-      
-      setUser(mockUser)
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Signup failed')
-      throw error
+      // Session will update automatically via useSession hook
+    } catch (err: any) {
+      // Error is set, rethrow for component
+      throw err
     } finally {
       setIsLoading(false)
     }
   }
 
   const loginWithGoogle = async (): Promise<void> => {
-    try {
-      setIsLoading(true)
-      setError(null)
-      
-      // TODO: Implement Google OAuth
-      // This is a placeholder implementation
-      console.log('Google login initiated...')
-      
-      // Simulate OAuth flow
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      // Mock Google user data
-      const mockUser: User = {
-        id: 'google_' + Date.now(),
-        fullName: 'Google User',
-        email: 'user@gmail.com',
-        role: 'student',
-        isAuthenticated: true,
-        profilePicture: 'https://via.placeholder.com/40'
-      }
-      
-      setUser(mockUser)
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Google login failed')
-      throw error
-    } finally {
-      setIsLoading(false)
-    }
+    // This function will be removed from home.tsx, but we can leave the mock here for now
+    // or remove it entirely if it's not used anywhere else.
+    console.warn('loginWithGoogle is not implemented');
   }
 
   const loginWithGitHub = async (): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setIsLoading(true)
-      setError(null)
-      
-      // TODO: Implement GitHub OAuth
-      // This is a placeholder implementation
-      console.log('GitHub login initiated...')
-      
-      // Simulate OAuth flow
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      // Mock GitHub user data
-      const mockUser: User = {
-        id: 'github_' + Date.now(),
-        fullName: 'GitHub User',
-        email: 'user@github.com',
-        role: 'student',
-        isAuthenticated: true,
-        profilePicture: 'https://via.placeholder.com/40'
-      }
-      
-      setUser(mockUser)
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'GitHub login failed')
-      throw error
+      await authClient.signIn.social({ provider: 'github' });
+      // On successful redirect from GitHub, the useSession hook will update the state.
+    } catch (err: any) {
+      setError(err.message || 'GitHub login failed');
+      throw err;
     } finally {
-      setIsLoading(false)
+      // The page will redirect, so this might not be reached.
+      setIsLoading(false);
     }
   }
 
   const logout = (): void => {
+    authClient.signOut()
     logoutUser()
   }
-
-  // Check for existing session on mount
-  useEffect(() => {
-    const checkExistingSession = async () => {
-      try {
-        // TODO: Check for existing session with backend
-        // For now, we rely on localStorage data loaded by AppProvider
-        console.log('Checking existing session...')
-      } catch (error) {
-        console.error('Session check failed:', error)
-      }
-    }
-
-    checkExistingSession()
-  }, [])
 
   const value: AuthContextType = useMemo(() => ({
     login,
@@ -173,9 +124,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loginWithGitHub,
     logout,
     isAuthenticated,
-    isLoading,
+    isLoading: isLoading || isPending,
     error: state.error,
-  }), [login, signup, loginWithGoogle, loginWithGitHub, logout, isAuthenticated, isLoading, state.error])
+  }), [login, signup, loginWithGoogle, loginWithGitHub, logout, isAuthenticated, isLoading, isPending, state.error])
 
   return (
     <AuthContext.Provider value={value}>

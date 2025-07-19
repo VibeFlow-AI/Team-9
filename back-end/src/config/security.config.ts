@@ -125,6 +125,7 @@ export const corsConfig = {
       'http://localhost:3000',
       'http://localhost:3001',
       'http://localhost:5173', // Vite dev server
+      'http://localhost:5174', // Vite dev server
       'http://localhost:4173', // Vite preview
       process.env.FRONTEND_URL || 'http://localhost:3000'
     ]

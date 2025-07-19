@@ -96,6 +96,11 @@ const initialState: AppState = {
 const appReducer = (state: AppState, action: AppAction): AppState => {
   switch (action.type) {
     case 'SET_USER':
+      if (action.payload) {
+        localStorage.setItem('user', JSON.stringify(action.payload))
+      } else {
+        localStorage.removeItem('user')
+      }
       return {
         ...state,
         user: action.payload,
@@ -314,81 +319,24 @@ export const useAppContext = () => {
 
 // Action Creators (Helper functions)
 export const useAppActions = () => {
-  const { dispatch, state } = useAppContext()
+  const { dispatch } = useAppContext();
 
-  return {
-    setUser: (user: User) => {
-      localStorage.setItem('user', JSON.stringify(user))
-      dispatch({ type: 'SET_USER', payload: user })
-    },
-
-    logout: () => {
-      dispatch({ type: 'LOGOUT_USER' })
-    },
-
-    setStudentData: (data: StudentData) => {
-      dispatch({ type: 'SET_STUDENT_DATA', payload: data })
-    },
-
-    setMentorData: (data: MentorData) => {
-      dispatch({ type: 'SET_MENTOR_DATA', payload: data })
-    },
-
-    addBookedSession: (session: BookedSession) => {
-      try {
-        dispatch({ type: 'ADD_BOOKED_SESSION', payload: session })
-      } catch (error) {
-        dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Booking failed' })
-        throw error
-      }
-    },
-
-    updateBookedSession: (id: string, updates: Partial<BookedSession>) => {
-      dispatch({ type: 'UPDATE_BOOKED_SESSION', payload: { id, updates } })
-    },
-
-    setBookedSessions: (sessions: BookedSession[]) => {
-      dispatch({ type: 'SET_BOOKED_SESSIONS', payload: sessions })
-    },
-
-    updateMentorAvailability: (availability: MentorAvailability) => {
-      dispatch({ type: 'UPDATE_MENTOR_AVAILABILITY', payload: availability })
-    },
-
-    setMentorAvailability: (availabilities: MentorAvailability[]) => {
-      dispatch({ type: 'SET_MENTOR_AVAILABILITY', payload: availabilities })
-    },
-
-    // 🔥 CONFLICT CHECK: Check if a time slot is available before booking
-    checkSlotAvailability: (mentorId: string, date: string, time: string): boolean => {
-      const existingBooking = state.bookedSessions.find(session => 
-        session.mentor.id === mentorId &&
-        session.date === date &&
-        session.time === time &&
-        session.status !== 'cancelled'
-      )
-      return !existingBooking
-    },
-
-    // 🔥 REAL-TIME SYNC: Get latest sync time
-    getLastSyncTime: (): number | null => {
-      return state.lastSyncTime
-    },
-
-    syncData: () => {
-      dispatch({ type: 'SYNC_DATA', payload: { timestamp: Date.now() } })
-    },
-
-    setLoading: (loading: boolean) => {
-      dispatch({ type: 'SET_LOADING', payload: loading })
-    },
-
-    setError: (error: string | null) => {
-      dispatch({ type: 'SET_ERROR', payload: error })
-    },
-
-    clearError: () => {
-      dispatch({ type: 'CLEAR_ERROR' })
-    },
-  }
-}
+  return useMemo(() => ({
+    setUser: (payload: User | null) => dispatch({ type: 'SET_USER', payload }),
+    logoutUser: () => dispatch({ type: 'LOGOUT_USER' }),
+    setStudentData: (payload: StudentData) => dispatch({ type: 'SET_STUDENT_DATA', payload }),
+    setMentorData: (payload: MentorData) => dispatch({ type: 'SET_MENTOR_DATA', payload }),
+    addBookedSession: (payload: BookedSession) => dispatch({ type: 'ADD_BOOKED_SESSION', payload }),
+    updateBookedSession: (payload: { id: string; updates: Partial<BookedSession> }) =>
+      dispatch({ type: 'UPDATE_BOOKED_SESSION', payload }),
+    setBookedSessions: (payload: BookedSession[]) => dispatch({ type: 'SET_BOOKED_SESSIONS', payload }),
+    updateMentorAvailability: (payload: MentorAvailability) =>
+      dispatch({ type: 'UPDATE_MENTOR_AVAILABILITY', payload }),
+    setMentorAvailability: (payload: MentorAvailability[]) =>
+      dispatch({ type: 'SET_MENTOR_AVAILABILITY', payload }),
+    syncData: (payload: { timestamp: number }) => dispatch({ type: 'SYNC_DATA', payload }),
+    setLoading: (payload: boolean) => dispatch({ type: 'SET_LOADING', payload }),
+    setError: (payload: string | null) => dispatch({ type: 'SET_ERROR', payload }),
+    clearError: () => dispatch({ type: 'CLEAR_ERROR' }),
+  }), [dispatch]);
+};
