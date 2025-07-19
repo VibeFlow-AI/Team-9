@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { BookOpen, Users, Calendar, Clock, TrendingUp, BarChart3 } from "lucide-react"
 import { useNavigate } from "react-router"
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { JitsiVideoCallButton } from "@/components/molecules"
 
 interface BookedSession {
   id: string
@@ -292,12 +293,16 @@ export default function MentorDashboard() {
                             <Badge variant={session.status === "confirmed" ? "default" : "secondary"}>
                               {session.status}
                             </Badge>
-                            <Button
-                              size="sm"
-                              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-                            >
-                              Start Session
-                            </Button>
+                            {session.status === "confirmed" && (
+                              <JitsiVideoCallButton
+                                sessionId={session.id}
+                                mentorName="Dr. Smith" // Replace with actual mentor name from context
+                                studentName={session.studentName}
+                                userDisplayName="Dr. Smith" // Replace with actual user name from context
+                                size="sm"
+                                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                              />
+                            )}
                           </div>
                         </div>
                       </div>
