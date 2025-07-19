@@ -28,14 +28,14 @@ jobs:
 
       - name: Set up project directory
         run: |
-          rm -rf ~/vibeflow-backend
-          mkdir -p ~/vibeflow-backend
-          cp -r . ~/vibeflow-backend
+          rm -rf $HOME/vibeflow-backend
+          mkdir -p $HOME/vibeflow-backend
+          cp -r . $HOME/vibeflow-backend
 
       - name: Install dependencies
         run: npm ci
-        working-directory: ~/vibeflow-backend/back-end
+        working-directory: ${{ env.HOME }}/vibeflow-backend/back-end
 
       - name: Run development server
         run: npm run dev
-        working-directory: ~/vibeflow-backend/back-end
+        working-directory: ${{ env.HOME }}/vibeflow-backend/back-end
