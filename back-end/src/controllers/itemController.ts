@@ -72,8 +72,8 @@ export const updateItem = async (
     });
 
     res.json(item);
-  } catch (error: any) {
-    if (error.code === 'P2025') {
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
       res.status(404).json({ message: 'Item not found' });
       return;
     }
@@ -95,8 +95,8 @@ export const deleteItem = async (
     });
 
     res.json(deletedItem);
-  } catch (error: any) {
-    if (error.code === 'P2025') {
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
       res.status(404).json({ message: 'Item not found' });
       return;
     }

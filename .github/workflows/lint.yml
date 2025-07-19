@@ -1,0 +1,61 @@
+name: Lint Application
+
+on:
+  push:
+    branches: ['*', '*/*', '**']
+  pull_request:
+    branches: ['*', '*/*', '**']
+  workflow_dispatch:
+
+jobs:
+  lint-frontend:
+    name: Lint Frontend (React)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Change to frontend directory
+        run: cd front-end
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: front-end/package-lock.json
+
+      - name: Install dependencies (frontend)
+        run: npm ci
+        working-directory: ./front-end
+
+      - name: Run lint (frontend)
+        run: npm run lint
+        working-directory: ./front-end
+
+  lint-backend:
+    name: Lint Backend (Node.js)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Change to back-end directory
+        run: cd back-end
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: back-end/package-lock.json
+
+      - name: Install dependencies (backend)
+        run: npm ci
+        working-directory: ./back-end
+
+      - name: Run lint (backend)
+        run: npm run lint
+        working-directory: ./back-end
