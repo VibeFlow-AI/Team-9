@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -12,99 +12,59 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  BookOpen,
-  Users,
-  Star,
-  Clock,
-  ChevronLeft,
-  ChevronRight,
-  Sparkles,
-  Target,
-  Brain,
-  Zap,
-  CheckCircle,
-  TrendingUp,
-  Award,
-  Shield,
   Loader2,
+  Bookmark,
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts";
-
-const features = [
-  {
-    id: 1,
-    icon: <Brain className="w-6 h-6" />,
-    title: "AI-Powered Matching",
-    description: "Smart algorithm finds your perfect mentor match",
-    gradient: "from-purple-500 to-pink-500",
-  },
-  {
-    id: 2,
-    icon: <Target className="w-6 h-6" />,
-    title: "Personalized Learning",
-    description: "Tailored sessions for your specific needs",
-    gradient: "from-blue-500 to-cyan-500",
-  },
-  {
-    id: 3,
-    icon: <Zap className="w-6 h-6" />,
-    title: "Instant Booking",
-    description: "Schedule sessions in just a few clicks",
-    gradient: "from-green-500 to-emerald-500",
-  },
-  {
-    id: 4,
-    icon: <Shield className="w-6 h-6" />,
-    title: "Verified Mentors",
-    description: "All mentors are professionally verified",
-    gradient: "from-orange-500 to-red-500",
-  },
-];
-
-const stats = [
-  { number: "50K+", label: "Active Students", icon: <Users className="w-5 h-5" /> },
-  { number: "2K+", label: "Expert Mentors", icon: <Award className="w-5 h-5" /> },
-  { number: "100K+", label: "Sessions Completed", icon: <CheckCircle className="w-5 h-5" /> },
-  { number: "98%", label: "Success Rate", icon: <TrendingUp className="w-5 h-5" /> },
-];
 
 const mentorHighlights = [
   {
     id: 1,
-    name: "Dr. Sarah Chen",
-    subject: "Advanced Biology",
+    name: "Rahul Lavan",
+    subject: "Science",
     avatar: "/placeholder.svg?height=80&width=80",
     rating: 4.9,
     students: 234,
     price: 45,
-    badge: "Top Rated",
-    specialty: "Genetics & Molecular Biology",
+    badge: "Science",
+    specialty: "Physics",
+    subjects: ["Science", "Physics", "Biology"],
+    duration: "30 mins - 1 hour",
+    languages: ["English", "Tamil"],
+    description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled"
   },
   {
     id: 2,
-    name: "Prof. Michael Rodriguez",
-    subject: "Physics & Mathematics",
+    name: "Chathum Rahal",
+    subject: "Mathematics",
     avatar: "/placeholder.svg?height=80&width=80",
     rating: 4.8,
     students: 189,
     price: 42,
-    badge: "Most Popular",
-    specialty: "Quantum Physics & Calculus",
+    badge: "Mathematics",
+    specialty: "History",
+    subjects: ["Mathematics", "History", "English"],
+    duration: "1 hour",
+    languages: ["English"],
+    description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled"
   },
   {
     id: 3,
-    name: "Dr. Aisha Patel",
+    name: "Malsha Fernando",
     subject: "Chemistry",
     avatar: "/placeholder.svg?height=80&width=80",
     rating: 5.0,
     students: 156,
     price: 48,
-    badge: "Expert",
-    specialty: "Organic Chemistry",
+    badge: "Chemistry",
+    specialty: "Art",
+    subjects: ["Chemistry", "Art", "Commerce"],
+    duration: "1 hour",
+    languages: ["Sinhala"],
+    description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled"
   },
 ];
 
@@ -139,8 +99,6 @@ const testimonials = [
 export default function HomePage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const [currentBenefit, setCurrentBenefit] = useState(0);
-  const [currentTestimonial, setCurrentTestimonial] = useState(0);
   
   // Form states
   const [loginForm, setLoginForm] = useState({
@@ -156,23 +114,26 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { login, signup, isLoading, error } = useAuth();
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const nextBenefit = () => {
-    setCurrentBenefit((prev) => (prev + 1) % features.length);
-  };
-
-  const prevBenefit = () => {
-    setCurrentBenefit((prev) => (prev - 1 + features.length) % features.length);
-  };
-
   const handleGetStarted = () => {
     setShowAuthModal(true);
+  };
+
+  const getAvatarBgClass = (mentorName: string) => {
+    if (mentorName === "Rahul Lavan") return "bg-blue-100";
+    if (mentorName === "Chathum Rahal") return "bg-orange-100";
+    return "bg-purple-100";
+  };
+
+  const getAvatarTextClass = (mentorName: string) => {
+    if (mentorName === "Rahul Lavan") return "text-blue-600";
+    if (mentorName === "Chathum Rahal") return "text-orange-600";
+    return "text-purple-600";
+  };
+
+  const getBadgeClass = (index: number) => {
+    if (index === 0) return "bg-blue-100 text-blue-800";
+    if (index === 1) return "bg-green-100 text-green-800";
+    return "bg-purple-100 text-purple-800";
   };
 
   const handleAuthSuccess = () => {
@@ -215,299 +176,254 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                EduVibe
-              </span>
+    <div className="min-h-screen bg-[#f4f4f4]">
+      {/* Header */}
+      <header className="bg-white px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-[#1d1d1b] rounded flex items-center justify-center">
+              <span className="text-white font-bold text-lg">E</span>
             </div>
-            <Button
+          </div>
+
+          <nav className="hidden md:flex items-center space-x-8">
+            <button className="text-[#1d1d1b] hover:text-[#6a4dff] transition-colors">
+              Home
+            </button>
+            <button className="text-[#1d1d1b] hover:text-[#6a4dff] transition-colors">
+              Sessions
+            </button>
+            <button className="text-[#1d1d1b] hover:text-[#6a4dff] transition-colors">
+              About
+            </button>
+          </nav>
+
+          <Button 
+            onClick={handleGetStarted}
+            className="bg-[#1d1d1b] hover:bg-[#434343] text-white px-6"
+          >
+            Get Started
+          </Button>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="px-6 py-16">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+          <div className="space-y-6">
+            <h1 className="text-5xl lg:text-6xl font-bold text-[#1d1d1b] leading-tight">
+              Empowering Students with Personalized Mentorship 📚
+            </h1>
+
+            <p className="text-lg text-[#434343] max-w-md">
+              EduVibe connects students with experienced mentors to guide them through their academic
+            </p>
+
+            <Button 
               onClick={handleGetStarted}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-2 rounded-full transition-all duration-300 transform hover:scale-105"
+              className="bg-[#1d1d1b] hover:bg-[#434343] text-white px-8 py-3 text-lg"
             >
               Get Started
             </Button>
           </div>
-        </div>
-      </nav>
 
-      {/* Hero Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 px-4 py-2">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  AI-Powered Learning Platform
-                </Badge>
-                <h1 className="text-5xl lg:text-6xl font-bold leading-tight">
-                  Connect with
-                  <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent block">
-                    Expert Mentors
-                  </span>
-                  for Personalized Learning
-                </h1>
-                <p className="text-xl text-gray-600 leading-relaxed">
-                  Transform your academic journey with AI-matched mentors,
-                  personalized sessions, and interactive learning experiences
-                  designed just for you.
+          {/* Photo Collage */}
+          <div className="relative h-96 lg:h-[500px]">
+            <div className="absolute top-0 right-12 w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
+              <img
+                src="/placeholder.svg?height=96&width=96"
+                alt="Student"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="absolute top-16 left-8 w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg">
+              <img
+                src="/placeholder.svg?height=128&width=128"
+                alt="Student"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="absolute top-32 right-0 w-28 h-28 rounded-full overflow-hidden border-4 border-white shadow-lg">
+              <img
+                src="/placeholder.svg?height=112&width=112"
+                alt="Student"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="absolute bottom-32 left-0 w-36 h-36 rounded-full overflow-hidden border-4 border-white shadow-lg">
+              <img
+                src="/placeholder.svg?height=144&width=144"
+                alt="Student"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="absolute bottom-16 right-8 w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg">
+              <img
+                src="/placeholder.svg?height=128&width=128"
+                alt="Student"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="absolute bottom-0 right-20 w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
+              <img
+                src="/placeholder.svg?height=96&width=96"
+                alt="Student"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="absolute bottom-8 left-16 w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-lg">
+              <img
+                src="/placeholder.svg?height=80&width=80"
+                alt="Student"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* What's in it for Students Section */}
+      <section className="px-6 py-16 bg-gradient-to-b from-[#f4f4f4] to-[#d9ff00]/20">
+        <div className="max-w-7xl mx-auto text-center">
+          <h2 className="text-4xl lg:text-5xl font-bold text-[#1d1d1b] mb-6">What's in it for Students?</h2>
+
+          <p className="text-lg text-[#434343] max-w-2xl mx-auto mb-12">
+            EduVibe is a student-mentor platform designed to personalize learning journeys. It connects students with
+            mentors who offer guidance, support, and practical industry insights.
+          </p>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="bg-white border-0 shadow-lg rounded-2xl overflow-hidden">
+              <div className="h-48 bg-gradient-to-br from-blue-100 to-blue-200">
+                <img
+                  src="/placeholder.svg?height=192&width=300"
+                  alt="Personalized Learning"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <CardContent className="p-6">
+                <h3 className="text-xl font-bold text-[#1d1d1b] mb-3">Personalized Learning</h3>
+                <p className="text-[#434343] text-sm">
+                  We tailor the mentorship experience to fit each student's unique goals, learning style, and pace
+                  making every session impactful.
                 </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  onClick={handleGetStarted}
-                  size="lg"
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 rounded-full text-lg transition-all duration-300 transform hover:scale-105"
-                >
-                  Start Learning Today
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="border-2 border-gray-300 hover:border-blue-500 px-8 py-4 rounded-full text-lg transition-all duration-300 bg-transparent"
-                >
-                  Watch Demo
-                </Button>
-              </div>
-            </div>
-            <div className="relative">
-              <div className="grid grid-cols-2 gap-4">
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-0 shadow-lg rounded-2xl overflow-hidden">
+              <div className="h-48 bg-gradient-to-br from-green-100 to-green-200">
                 <img
-                  src="/placeholder.svg?height=300&width=250"
-                  alt="Student 1"
-                  className="rounded-2xl shadow-2xl transform rotate-3 hover:rotate-6 transition-transform duration-300"
-                />
-                <img
-                  src="/placeholder.svg?height=300&width=250"
-                  alt="Mentor"
-                  className="rounded-2xl shadow-2xl transform -rotate-3 hover:-rotate-6 transition-transform duration-300 mt-8"
+                  src="/placeholder.svg?height=192&width=300"
+                  alt="Real Mentors"
+                  className="w-full h-full object-cover"
                 />
               </div>
-              <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center animate-bounce">
-                <Star className="w-10 h-10 text-white" />
+              <CardContent className="p-6">
+                <h3 className="text-xl font-bold text-[#1d1d1b] mb-3">Real Mentors, Real Guidance</h3>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-0 shadow-lg rounded-2xl overflow-hidden">
+              <div className="h-48 bg-gradient-to-br from-purple-100 to-purple-200">
+                <img
+                  src="/placeholder.svg?height=192&width=300"
+                  alt="Growth & Career"
+                  className="w-full h-full object-cover"
+                />
               </div>
-            </div>
+              <CardContent className="p-6">
+                <h3 className="text-xl font-bold text-[#1d1d1b] mb-3">Growth & Career Readiness</h3>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-0 shadow-lg rounded-2xl overflow-hidden">
+              <div className="h-48 bg-gradient-to-br from-orange-100 to-orange-200">
+                <img
+                  src="/placeholder.svg?height=192&width=300"
+                  alt="Insights-Driven Support"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <CardContent className="p-6">
+                <h3 className="text-xl font-bold text-[#1d1d1b] mb-3">Insights-Driven Support</h3>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
 
-      {/* Benefits Carousel */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Why Choose EduVibe?</h2>
-            <p className="text-xl text-gray-600">
-              Discover the benefits that make learning extraordinary
-            </p>
-          </div>
+      {/* Session Highlights Section */}
+      <section className="px-6 py-16 bg-gradient-to-b from-[#d9ff00]/20 to-purple-100/30">
+        <div className="max-w-7xl mx-auto text-center">
+          <h2 className="text-4xl lg:text-5xl font-bold text-[#1d1d1b] mb-6">Session Highlights – Trending Now</h2>
 
-          <div className="relative">
-            <div className="flex items-center justify-center">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={prevBenefit}
-                className="absolute left-0 z-10 rounded-full shadow-lg bg-transparent"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
+          <p className="text-lg text-[#434343] max-w-3xl mx-auto mb-12">
+            Join the sessions students are raving about. These expert-led, high-impact sessions are designed to help you
+            unlock your full potential whether you're polishing your resume, mapping out your career path, or getting
+            ready to ace technical interviews.
+          </p>
 
-              <Card className="max-w-md mx-auto transform transition-all duration-500 hover:scale-105">
-                <CardContent className="p-8 text-center">
-                  <div className="mb-6 flex justify-center">
-                    {features[currentBenefit].icon}
-                  </div>
-                  <h3 className="text-2xl font-bold mb-4">
-                    {features[currentBenefit].title}
-                  </h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    {features[currentBenefit].description}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={nextBenefit}
-                className="absolute right-0 z-10 rounded-full shadow-lg bg-transparent"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-
-            <div className="flex justify-center mt-8 space-x-2">
-              {features.map((feature, index) => (
-                <button
-                  key={`feature-${feature.title}-${index}`}
-                  onClick={() => setCurrentBenefit(index)}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    index === currentBenefit
-                      ? "bg-blue-500 scale-125"
-                      : "bg-gray-300"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Session Highlights */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-blue-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">
-              Featured Learning Sessions
-            </h2>
-            <p className="text-xl text-gray-600">
-              Explore our most popular mentor-led sessions
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
             {mentorHighlights.map((mentor) => (
-              <Card
-                key={mentor.id}
-                className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
-              >
+              <Card key={mentor.id} className="bg-white border-0 shadow-lg rounded-2xl overflow-hidden">
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-3 mb-4">
-                    <Avatar>
-                      <AvatarImage src={mentor.avatar || "/placeholder.svg"} />
-                      <AvatarFallback>
-                        {mentor.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold">{mentor.name}</p>
-                      <div className="flex items-center space-x-1">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="text-sm text-gray-600">
-                          {mentor.rating}
-                        </span>
-                      </div>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getAvatarBgClass(mentor.name)}`}>
+                      <span className={`font-bold text-lg ${getAvatarTextClass(mentor.name)}`}>
+                        {mentor.name.split(" ").map(n => n[0]).join("")}
+                      </span>
+                    </div>
+                    <div className="text-left">
+                      <h3 className="font-bold text-[#1d1d1b]">{mentor.name}</h3>
                     </div>
                   </div>
-
-                  <h3 className="text-xl font-bold mb-3 group-hover:text-blue-600 transition-colors">
-                    {mentor.subject}
-                  </h3>
 
                   <div className="flex flex-wrap gap-2 mb-4">
-                    <Badge variant="secondary" className="text-xs">
-                      {mentor.badge}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {mentor.specialty}
-                    </Badge>
+                    {mentor.subjects.map((subject, index) => (
+                      <Badge 
+                        key={`${mentor.id}-subject-${index}`}
+                        variant="secondary" 
+                        className={getBadgeClass(index)}
+                      >
+                        {subject}
+                      </Badge>
+                    ))}
                   </div>
 
-                  <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-4 h-4" />
-                      <span>Expert Level</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Users className="w-4 h-4" />
-                      <span>{mentor.students} students</span>
-                    </div>
+                  <p className="text-sm text-[#434343] mb-4 text-left">
+                    {mentor.description}
+                  </p>
+
+                  <div className="text-left text-xs text-[#8f8f8f] mb-4">
+                    <p>
+                      <strong>Duration:</strong> {mentor.duration}
+                    </p>
+                    <p>
+                      <strong>Preferred Language:</strong> {mentor.languages.join(", ")}
+                    </p>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-blue-600">
-                      ${mentor.price}/hr
-                    </span>
-                    <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
-                      Book Session
+                    <Button className="bg-[#1d1d1b] hover:bg-[#434343] text-white flex-1 mr-2">Book a session</Button>
+                    <Button variant="outline" size="icon">
+                      <Bookmark className="h-4 w-4" />
                     </Button>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
+
+          <Button
+            variant="outline"
+            className="border-[#1d1d1b] text-[#1d1d1b] hover:bg-[#1d1d1b] hover:text-white px-8 bg-transparent"
+          >
+            Load More Sessions
+          </Button>
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-20 bg-gradient-to-br from-blue-50 to-purple-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">
-              What Our Students Say
-            </h2>
-            <p className="text-xl text-gray-600">
-              Success stories from students who transformed their learning journey
-            </p>
-          </div>
-
-          <div className="max-w-4xl mx-auto">
-            <Card className="overflow-hidden shadow-2xl">
-              <CardContent className="p-8 md:p-12">
-                <div className="text-center">
-                  <div className="flex justify-center mb-6">
-                    {[...Array(testimonials[currentTestimonial].rating)].map((_, i) => (
-                      <Star key={`star-${testimonials[currentTestimonial].name}-${i}`} className="w-6 h-6 text-yellow-400 fill-current" />
-                    ))}
-                  </div>
-                  
-                  <blockquote className="text-xl md:text-2xl text-gray-700 mb-8 italic leading-relaxed">
-                    "{testimonials[currentTestimonial].content}"
-                  </blockquote>
-                  
-                  <div className="flex items-center justify-center space-x-4">
-                    <Avatar className="h-16 w-16">
-                      <AvatarImage src={testimonials[currentTestimonial].avatar} />
-                      <AvatarFallback>
-                        {testimonials[currentTestimonial].name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="text-left">
-                      <p className="font-semibold text-lg">{testimonials[currentTestimonial].name}</p>
-                      <p className="text-gray-600">{testimonials[currentTestimonial].role}</p>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Badge variant="secondary" className="bg-green-100 text-green-700">
-                          {testimonials[currentTestimonial].improvement}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <div className="flex justify-center mt-8 space-x-2">
-              {testimonials.map((testimonial, index) => (
-                <button
-                  key={`testimonial-${testimonial.name}-${index}`}
-                  onClick={() => setCurrentTestimonial(index)}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    index === currentTestimonial
-                      ? "bg-blue-500 scale-125"
-                      : "bg-gray-300"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Auth Modal */}
+      {/* Auth Modal - Keep existing auth modal unchanged */}
       <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
