@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
-import { auth } from '../lib/auth';
-import { fromNodeHeaders } from 'better-auth/node';
 
 export const getStudentProfile = async (req: Request, res: Response) => {
   try {
@@ -28,14 +26,14 @@ export const getStudentProfile = async (req: Request, res: Response) => {
 };
 
 export const onboardStudent = async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
   try {
-    const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
-    if (!session?.user) return res.status(401).json({ message: 'Unauthorized' });
-    const existing = await prisma.student.findUnique({ where: { userId: session.user.id } });
+    const existing = await prisma.student.findUnique({ where: { userId } });
     if (existing) return res.status(400).json({ message: 'Student already onboarded' });
     const student = await prisma.student.create({
       data: {
-        userId: session.user.id,
+        userId,
         ...req.body,
       },
     });
@@ -46,21 +44,27 @@ export const onboardStudent = async (req: Request, res: Response) => {
 };
 
 export const updateStudentProfile = async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
   try {
-    const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
-    if (!session?.user) return res.status(401).json({ message: 'Unauthorized' });
-    const student = await prisma.student.update({
-      where: { id: req.params.id, userId: session.user.id },
+    const student = await prisma.student.findFirst({ where: { id: req.params.id, userId } });
+    if (!student) return res.status(403).json({ message: 'Forbidden' });
+    const updated = await prisma.student.update({
+      where: { id: req.params.id },
       data: req.body,
     });
-    res.json(student);
+    res.json(updated);
   } catch (error) {
     res.status(500).json({ message: 'Error updating student profile', error });
   }
 };
 
 export const listStudentSessions = async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
   try {
+    const student = await prisma.student.findFirst({ where: { id: req.params.id, userId } });
+    if (!student) return res.status(403).json({ message: 'Forbidden' });
     const sessions = await prisma.booking.findMany({
       where: { studentId: req.params.id },
       include: {
@@ -78,7 +82,7 @@ export const listStudentSessions = async (req: Request, res: Response) => {
 };
 
 export const matchMentors = async (req: Request, res: Response) => {
-  // Placeholder: In production, use AI/ML or advanced filtering
+  // Public endpoint
   try {
     let subjects: string[] | undefined = undefined;
     if (req.query.subjectsOfInterest) {

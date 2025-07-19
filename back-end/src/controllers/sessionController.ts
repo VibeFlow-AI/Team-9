@@ -1,14 +1,12 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
-import { auth } from '../lib/auth';
-import { fromNodeHeaders } from 'better-auth/node';
 
 export const bookSession = async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
   try {
-    const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
-    if (!session?.user) return res.status(401).json({ message: 'Unauthorized' });
     // Find student by userId
-    const student = await prisma.student.findUnique({ where: { userId: session.user.id } });
+    const student = await prisma.student.findUnique({ where: { userId } });
     if (!student) return res.status(404).json({ message: 'Student profile not found' });
     // Validate mentorSessionId and mentorId
     const { mentorSessionId, scheduledDateTime, sessionNotes } = req.body;
@@ -30,6 +28,8 @@ export const bookSession = async (req: Request, res: Response) => {
 };
 
 export const getSessionDetails = async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
   try {
     const booking = await prisma.booking.findUnique({
       where: { id: req.params.id },
@@ -42,6 +42,10 @@ export const getSessionDetails = async (req: Request, res: Response) => {
       },
     });
     if (!booking) return res.status(404).json({ message: 'Session not found' });
+    // Only allow student or mentor to view
+    if (booking.student.userId !== userId && booking.mentor.userId !== userId) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
     res.json(booking);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching session details', error });
@@ -49,12 +53,16 @@ export const getSessionDetails = async (req: Request, res: Response) => {
 };
 
 export const uploadBankSlip = async (req: Request, res: Response) => {
-  // This assumes a file upload middleware is used before this handler
+  const userId = (req as any).userId;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
   try {
     const booking = await prisma.booking.findUnique({ where: { id: req.params.id } });
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
+    // Only allow student to upload
+    const student = await prisma.student.findUnique({ where: { id: booking.studentId } });
+    if (!student || student.userId !== userId) return res.status(403).json({ message: 'Forbidden' });
     // Simulate file upload: req.file should be set by multer
-    const { file } = req as unknown as { file: Express.Multer.File };
+    const { file } = req as any;
     if (!file) return res.status(400).json({ message: 'No file uploaded' });
     const payment = await prisma.payment.upsert({
       where: { bookingId: booking.id },
@@ -79,7 +87,11 @@ export const uploadBankSlip = async (req: Request, res: Response) => {
 };
 
 export const getStudentSessions = async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
   try {
+    const student = await prisma.student.findFirst({ where: { id: req.params.id, userId } });
+    if (!student) return res.status(403).json({ message: 'Forbidden' });
     const sessions = await prisma.booking.findMany({
       where: { studentId: req.params.id },
       include: {
@@ -97,7 +109,11 @@ export const getStudentSessions = async (req: Request, res: Response) => {
 };
 
 export const getMentorSessions = async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
   try {
+    const mentor = await prisma.mentor.findFirst({ where: { id: req.params.id, userId } });
+    if (!mentor) return res.status(403).json({ message: 'Forbidden' });
     const sessions = await prisma.booking.findMany({
       where: { mentorId: req.params.id },
       include: {

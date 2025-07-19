@@ -325,6 +325,7 @@ export const useAppActions = () => {
 
   return useMemo(() => ({
     setUser: (payload: User | null) => dispatch({ type: 'SET_USER', payload }),
+    logout: () => dispatch({ type: 'LOGOUT_USER' }),
     logoutUser: () => dispatch({ type: 'LOGOUT_USER' }),
     setStudentData: (payload: StudentData) => dispatch({ type: 'SET_STUDENT_DATA', payload }),
     setMentorData: (payload: MentorData) => dispatch({ type: 'SET_MENTOR_DATA', payload }),

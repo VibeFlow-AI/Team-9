@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
-import { auth } from '../lib/auth';
-import { fromNodeHeaders } from 'better-auth/node';
 
 export const getMentorProfile = async (req: Request, res: Response) => {
   try {
@@ -35,14 +33,14 @@ export const getMentorProfile = async (req: Request, res: Response) => {
 };
 
 export const onboardMentor = async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
   try {
-    const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
-    if (!session?.user) return res.status(401).json({ message: 'Unauthorized' });
-    const existing = await prisma.mentor.findUnique({ where: { userId: session.user.id } });
+    const existing = await prisma.mentor.findUnique({ where: { userId } });
     if (existing) return res.status(400).json({ message: 'Mentor already onboarded' });
     const mentor = await prisma.mentor.create({
       data: {
-        userId: session.user.id,
+        userId,
         ...req.body,
       },
     });
@@ -53,21 +51,27 @@ export const onboardMentor = async (req: Request, res: Response) => {
 };
 
 export const updateMentorProfile = async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
   try {
-    const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
-    if (!session?.user) return res.status(401).json({ message: 'Unauthorized' });
-    const mentor = await prisma.mentor.update({
-      where: { id: req.params.id, userId: session.user.id },
+    const mentor = await prisma.mentor.findFirst({ where: { id: req.params.id, userId } });
+    if (!mentor) return res.status(403).json({ message: 'Forbidden' });
+    const updated = await prisma.mentor.update({
+      where: { id: req.params.id },
       data: req.body,
     });
-    res.json(mentor);
+    res.json(updated);
   } catch (error) {
     res.status(500).json({ message: 'Error updating mentor profile', error });
   }
 };
 
 export const listMentorSessions = async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
   try {
+    const mentor = await prisma.mentor.findFirst({ where: { id: req.params.id, userId } });
+    if (!mentor) return res.status(403).json({ message: 'Forbidden' });
     const sessions = await prisma.booking.findMany({
       where: { mentorId: req.params.id },
       include: {

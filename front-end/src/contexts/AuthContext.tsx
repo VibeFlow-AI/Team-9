@@ -1,14 +1,15 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react'
+import React, { createContext, useContext, useState, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { useAppActions, useAppContext } from './AppContext'
 import type { User } from './AppContext'
-import { authClient } from '../lib/auth-client'
+import axios from 'axios'
+
+// Update API_BASE to new backend URL
+const API_BASE = 'http://localhost:3000/api/v1/users';
 
 interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
-  signup: (email: string, password: string, fullName: string, role: 'student' | 'mentor') => Promise<void>
-  loginWithGoogle: () => Promise<void>
-  loginWithGitHub: () => Promise<void>
+  signup: (email: string, password: string) => Promise<void>
   logout: () => void
   isAuthenticated: boolean
   isLoading: boolean
@@ -23,110 +24,68 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const { state } = useAppContext()
-  const { setUser, logoutUser, setError } = useAppActions()
+  const { setUser, logout: appLogout } = useAppActions()
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const { data: session, isPending } = authClient.useSession()
-
-  const isAuthenticated = !!session?.user
-
-  useEffect(() => {
-    if (session?.user) {
-      // Map Better Auth user to your User type
-      setUser({
-        id: session.user.id,
-        fullName: session.user.name || '',
-        email: session.user.email,
-        role: 'student', // Default to 'student' as role is not in Better Auth user
-        profilePicture: session.user.image,
-        isAuthenticated: true,
-      })
-    } else if (!isPending) {
-      setUser(null)
-    }
-  }, [session, setUser, isPending])
+  const isAuthenticated = !!state.user?.isAuthenticated
 
   const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true)
     setError(null)
     try {
-      const { error } = await authClient.signIn.email({ email, password })
-      if (error) {
-        setError(error.message)
-        throw new Error(error.message)
-      }
-      // Session will update automatically via useSession hook
+      const res = await axios.post(`${API_BASE}/login`, { email, password })
+      const { token } = res.data
+      localStorage.setItem('token', token)
+      // Fetch user profile
+      const profileRes = await axios.get(`${API_BASE}/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const user = profileRes.data
+      setUser({
+        id: user.id,
+        fullName: user.email, // No name, so use email
+        email: user.email,
+        role: 'student', // Add back for type compatibility
+        isAuthenticated: true,
+      })
     } catch (err: any) {
-      // Error is set, rethrow for component
+      setError(err.response?.data?.message || 'Login failed')
       throw err
     } finally {
       setIsLoading(false)
     }
   }
 
-  const signup = async (
-    email: string,
-    password: string,
-    fullName: string,
-    role: 'student' | 'mentor'
-  ): Promise<void> => {
+  const signup = async (email: string, password: string): Promise<void> => {
     setIsLoading(true)
     setError(null)
     try {
-      const { error } = await authClient.signUp.email({
-        email,
-        password,
-        name: fullName,
-      })
-      if (error) {
-        setError(error.message)
-        throw new Error(error.message)
-      }
-      // Session will update automatically via useSession hook
+      await axios.post(`${API_BASE}/register`, { email, password })
+      // Auto-login after signup
+      await login(email, password)
     } catch (err: any) {
-      // Error is set, rethrow for component
+      setError(err.response?.data?.message || 'Signup failed')
       throw err
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const loginWithGoogle = async (): Promise<void> => {
-    // This function will be removed from home.tsx, but we can leave the mock here for now
-    // or remove it entirely if it's not used anywhere else.
-    console.warn('loginWithGoogle is not implemented');
-  }
-
-  const loginWithGitHub = async (): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      await authClient.signIn.social({ provider: 'github' });
-      // On successful redirect from GitHub, the useSession hook will update the state.
-    } catch (err: any) {
-      setError(err.message || 'GitHub login failed');
-      throw err;
-    } finally {
-      // The page will redirect, so this might not be reached.
-      setIsLoading(false);
     }
   }
 
   const logout = (): void => {
-    authClient.signOut()
-    logoutUser()
+    localStorage.removeItem('token')
+    setUser(null)
+    appLogout()
   }
 
   const value: AuthContextType = useMemo(() => ({
     login,
     signup,
-    loginWithGoogle,
-    loginWithGitHub,
     logout,
     isAuthenticated,
-    isLoading: isLoading || isPending,
-    error: state.error,
-  }), [login, signup, loginWithGoogle, loginWithGitHub, logout, isAuthenticated, isLoading, isPending, state.error])
+    isLoading,
+    error,
+  }), [login, signup, logout, isAuthenticated, isLoading, error])
 
   return (
     <AuthContext.Provider value={value}>

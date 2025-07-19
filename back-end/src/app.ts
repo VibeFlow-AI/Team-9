@@ -24,9 +24,6 @@ app.use(cors(corsConfig));
 app.use(requestIdMiddleware);
 app.use(requestLogger);
 
-// Auth routes - Express v5 requires *splat pattern
-app.all('/api/auth/*splat', toNodeHandler(auth));
-
 app.use(express.json());
 
 // API routes with base URL as specified in context.md
