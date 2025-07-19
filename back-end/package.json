@@ -36,6 +36,8 @@
     "typescript-eslint": "^8.37.0"
   },
   "dependencies": {
+    "@prisma/client": "^6.11.1",
+    "better-auth": "^1.2.12",
     "cors": "^2.8.5"
   }
 }
