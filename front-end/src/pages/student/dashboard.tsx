@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label"
 import { BookOpen, Search, Star, Clock, Users, Calendar, Upload } from "lucide-react"
 import { useNavigate } from "react-router"
+import { useAppContext, useAppActions, useAuth } from "@/contexts"
 
 // Enhanced mock mentor data with 15+ mentors
 const mockMentors = [
@@ -280,37 +281,31 @@ interface BookedSession {
 export default function StudentDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedSubject, setSelectedSubject] = useState("all")
-  const [selectedDuration, setSelectedDuration] = useState("")
   const [showBookingModal, setShowBookingModal] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [selectedMentor, setSelectedMentor] = useState<any>(null)
   const [selectedDate, setSelectedDate] = useState("")
   const [selectedTime, setSelectedTime] = useState("")
-  const [bookedSessions, setBookedSessions] = useState<BookedSession[]>([])
-  const [studentData, setStudentData] = useState<any>(null)
+  const { state } = useAppContext()
+  const { addBookedSession } = useAppActions()
+  const { logout } = useAuth()
   const navigate = useNavigate()
 
   const [selectedPriceRange, setSelectedPriceRange] = useState("all")
   const [selectedRating, setSelectedRating] = useState("all")
   const [selectedExperience, setSelectedExperience] = useState("all")
 
-  useEffect(() => {
-    // Load student data from localStorage
-    const data = localStorage.getItem("studentData")
-    if (data) {
-      setStudentData(JSON.parse(data))
-    }
+  // Get data from context instead of localStorage
+  const studentData = state.studentData
+  const bookedSessions = state.bookedSessions
+  const user = state.user
 
-    // Load booked sessions or use mock data
-    const sessions = localStorage.getItem("bookedSessions")
-    if (sessions) {
-      setBookedSessions(JSON.parse(sessions))
-    } else {
-      // Use mock data if no sessions exist
-      setBookedSessions(mockBookedSessions)
-      localStorage.setItem("bookedSessions", JSON.stringify(mockBookedSessions))
+  useEffect(() => {
+    // If no student data in context, redirect to onboarding
+    if (!studentData) {
+      navigate("/student/onboarding")
     }
-  }, [])
+  }, [studentData, navigate])
 
   const filteredMentors = mockMentors.filter((mentor) => {
     const matchesSearch =
@@ -387,9 +382,8 @@ export default function StudentDashboard() {
       status: "pending",
     }
 
-    const updatedSessions = [...bookedSessions, newSession]
-    setBookedSessions(updatedSessions)
-    localStorage.setItem("bookedSessions", JSON.stringify(updatedSessions))
+    // Add to context instead of local state
+    addBookedSession(newSession)
 
     setShowPaymentModal(false)
     setSelectedMentor(null)

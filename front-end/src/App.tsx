@@ -5,6 +5,9 @@ import StudentOnboardingPage from "./pages/student/onboarding";
 import StudentDashboardPage from "./pages/student/dashboard";
 import MentorOnboardingPage from "./pages/mentor/onboarding";
 import MentorDashboardPage from "./pages/mentor/dashboard";
+import { AppProvider, AuthProvider } from "./contexts";
+import ErrorBoundary from "./components/ErrorBoundary";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const routes = createBrowserRouter([
   {
@@ -13,28 +16,56 @@ const routes = createBrowserRouter([
   },
   {
     path: "/role-selection",
-    element: <RoleSelectionPage />,
+    element: (
+      <ProtectedRoute>
+        <RoleSelectionPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/student/onboarding",
-    element: <StudentOnboardingPage />,
+    element: (
+      <ProtectedRoute>
+        <StudentOnboardingPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/student/dashboard",
-    element: <StudentDashboardPage />,
+    element: (
+      <ProtectedRoute>
+        <StudentDashboardPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/mentor/onboarding",
-    element: <MentorOnboardingPage />,
+    element: (
+      <ProtectedRoute>
+        <MentorOnboardingPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/mentor/dashboard",
-    element: <MentorDashboardPage />,
+    element: (
+      <ProtectedRoute>
+        <MentorDashboardPage />
+      </ProtectedRoute>
+    ),
   },
 ]);
 
 function App() {
-  return <RouterProvider router={routes} />;
+  return (
+    <ErrorBoundary>
+      <AppProvider>
+        <AuthProvider>
+          <RouterProvider router={routes} />
+        </AuthProvider>
+      </AppProvider>
+    </ErrorBoundary>
+  );
 }
 
 export default App;

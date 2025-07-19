@@ -12,8 +12,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { BookOpen, User, GraduationCap, Target } from "lucide-react"
 import { useNavigate } from "react-router"
+import { useAppActions, type StudentData as StudentContextData } from "@/contexts"
 
-interface StudentData {
+interface LocalStudentData {
   // Part 1: Basic Information
   fullName: string
   age: string
@@ -35,7 +36,9 @@ interface StudentData {
 
 export default function StudentOnboarding() {
   const [currentStep, setCurrentStep] = useState(1)
-  const [studentData, setStudentData] = useState<StudentData>({
+  const { setStudentData: saveStudentData } = useAppActions()
+  const navigate = useNavigate()
+  const [studentData, setStudentData] = useState<LocalStudentData>({
     fullName: "",
     age: "",
     email: "",
@@ -50,7 +53,6 @@ export default function StudentOnboarding() {
     learningDisabilitiesDescription: "",
   })
 
-  const navigate = useNavigate()
   const totalSteps = 3
   const progress = (currentStep / totalSteps) * 100
 
@@ -59,7 +61,7 @@ export default function StudentOnboarding() {
     .map((s) => s.trim())
     .filter((s) => s)
 
-  const handleInputChange = (field: keyof StudentData, value: any) => {
+  const handleInputChange = (field: keyof LocalStudentData, value: any) => {
     setStudentData((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -90,9 +92,19 @@ export default function StudentOnboarding() {
   }
 
   const handleSubmit = () => {
-    // Save student data and redirect to dashboard
-    localStorage.setItem("studentData", JSON.stringify(studentData))
-    localStorage.setItem("userRole", "student")
+    // Convert local data to context format
+    const contextData: StudentContextData = {
+      fullName: studentData.fullName,
+      email: studentData.email,
+      grade: studentData.educationLevel,
+      subjectsOfInterest: studentData.subjectsOfInterest,
+      learningGoals: "", // This would need to be added to the form or derived
+      availability: [], // This would need to be added to the form
+      learningStyle: studentData.learningStyle.join(", ")
+    }
+    
+    // Save to context
+    saveStudentData(contextData)
     navigate("/student/dashboard")
   }
 

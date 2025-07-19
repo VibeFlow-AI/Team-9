@@ -25,6 +25,7 @@ import { useNavigate } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/contexts";
 
 const benefits = [
   {
@@ -93,7 +94,14 @@ export default function HomePage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [currentBenefit, setCurrentBenefit] = useState(0);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    fullName: "",
+    role: "student" as "student" | "mentor"
+  });
   const navigate = useNavigate();
+  const { login, signup, loginWithGoogle, loginWithGitHub, isLoading, error } = useAuth();
 
   const nextBenefit = () => {
     setCurrentBenefit((prev) => (prev + 1) % benefits.length);
@@ -112,18 +120,50 @@ export default function HomePage() {
     navigate("/role-selection");
   };
 
-  const handleGoogleLogin = () => {
-    // TODO: Implement Google OAuth
-    console.log("Google login clicked");
-    // For now, just proceed to role selection
-    handleAuthSuccess();
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await login(formData.email, formData.password);
+      handleAuthSuccess();
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
   };
 
-  const handleGitHubLogin = () => {
-    // TODO: Implement GitHub OAuth
-    console.log("GitHub login clicked");
-    // For now, just proceed to role selection
-    handleAuthSuccess();
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await signup(formData.email, formData.password, formData.fullName, formData.role);
+      handleAuthSuccess();
+    } catch (error) {
+      console.error("Signup failed:", error);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      await loginWithGoogle();
+      handleAuthSuccess();
+    } catch (error) {
+      console.error("Google login failed:", error);
+    }
+  };
+
+  const handleGitHubLogin = async () => {
+    try {
+      await loginWithGitHub();
+      handleAuthSuccess();
+    } catch (error) {
+      console.error("GitHub login failed:", error);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   return (
@@ -371,24 +411,39 @@ export default function HomePage() {
 
             <TabsContent value="login" className="space-y-4">
               {/* Email Login Form */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="Enter your email" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                />
-              </div>
-              <Button
-                onClick={handleAuthSuccess}
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-              >
-                Login
-              </Button>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input 
+                    id="email" 
+                    name="email"
+                    type="email" 
+                    placeholder="Enter your email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                >
+                  {isLoading ? "Logging in..." : "Login"}
+                </Button>
+              </form>
 
               {/* Divider */}
               <div className="relative">
@@ -449,51 +504,83 @@ export default function HomePage() {
 
             <TabsContent value="signup" className="space-y-4">
               {/* Email Signup Form */}
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" placeholder="Enter your full name" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
-                <Input
-                  id="signup-email"
-                  type="email"
-                  placeholder="Enter your email"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
-                <Input
-                  id="signup-password"
-                  type="password"
-                  placeholder="Create a password"
-                />
-              </div>
+              <form onSubmit={handleSignup} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input 
+                    id="name" 
+                    name="fullName"
+                    placeholder="Enter your full name"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email</Label>
+                  <Input
+                    id="signup-email"
+                    name="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Password</Label>
+                  <Input
+                    id="signup-password"
+                    name="password"
+                    type="password"
+                    placeholder="Create a password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">I am a:</Label>
+                  <select
+                    id="role"
+                    name="role"
+                    value={formData.role}
+                    onChange={handleInputChange}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    required
+                  >
+                    <option value="student">Student</option>
+                    <option value="mentor">Mentor</option>
+                  </select>
+                </div>
 
-              {/* Terms and Privacy */}
-              <p className="text-xs text-gray-600 text-center">
-                By signing up, you agree to our{" "}
-                <button
-                  type="button"
-                  className="text-blue-600 hover:underline underline-offset-2"
-                >
-                  Terms of Service
-                </button>{" "}
-                and{" "}
-                <button
-                  type="button"
-                  className="text-blue-600 hover:underline underline-offset-2"
-                >
-                  Privacy Policy
-                </button>
-              </p>
+                {/* Terms and Privacy */}
+                <p className="text-xs text-gray-600 text-center">
+                  By signing up, you agree to our{" "}
+                  <button
+                    type="button"
+                    className="text-blue-600 hover:underline underline-offset-2"
+                  >
+                    Terms of Service
+                  </button>{" "}
+                  and{" "}
+                  <button
+                    type="button"
+                    className="text-blue-600 hover:underline underline-offset-2"
+                  >
+                    Privacy Policy
+                  </button>
+                </p>
 
-              <Button
-                onClick={handleAuthSuccess}
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-              >
-                Create Account
-              </Button>
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                >
+                  {isLoading ? "Creating Account..." : "Create Account"}
+                </Button>
+              </form>
 
               {/* Divider */}
               <div className="relative">
