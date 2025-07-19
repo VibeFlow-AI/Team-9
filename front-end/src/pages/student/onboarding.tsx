@@ -14,6 +14,22 @@ import { BookOpen, User, GraduationCap, Target } from "lucide-react"
 import { useNavigate } from "react-router"
 import { useAppActions, type StudentData as StudentContextData } from "@/contexts"
 import { useFormPersistence } from "@/hooks/useFormPersistence"
+import axios from "axios"
+
+// Add these enums at the top of the file to match Prisma schema
+enum EducationLevel {
+  GRADE_9 = "GRADE_9",
+  ORDINARY_LEVEL = "ORDINARY_LEVEL",
+  ADVANCED_LEVEL = "ADVANCED_LEVEL",
+  UNIVERSITY = "UNIVERSITY"
+}
+
+enum LearningStyle {
+  VISUAL = "VISUAL",
+  HANDS_ON = "HANDS_ON",
+  THEORETICAL = "THEORETICAL",
+  MIXED = "MIXED"
+}
 
 interface LocalStudentData {
   // Part 1: Basic Information
@@ -117,30 +133,114 @@ export default function StudentOnboarding() {
     }
   }
 
-  const handleSubmit = () => {
-    // Convert local data to context format
-    const contextData: StudentContextData = {
-      fullName: studentData.fullName,
-      email: studentData.email,
-      grade: studentData.educationLevel,
-      subjectsOfInterest: studentData.subjectsOfInterest,
-      learningGoals: studentData.learningStyle.join(", "),
-      availability: ["Monday", "Wednesday", "Friday"], // Default availability
-      learningStyle: studentData.learningStyle.join(", "),
-    }
+  const handleSubmit = async () => {
+    try {
+      // Map the education level to the correct enum value
+      const educationLevelMap: { [key: string]: EducationLevel } = {
+        'grade-9': EducationLevel.GRADE_9,
+        'ordinary-level': EducationLevel.ORDINARY_LEVEL,
+        'advanced-level': EducationLevel.ADVANCED_LEVEL,
+        'university': EducationLevel.UNIVERSITY
+      };
 
-    // Save to global context
-    saveStudentData(contextData)
-    
-    // 🔥 CLEAR SAVED FORM DATA: Clear form persistence
-    clearFormData()
-    
-    // Clear step persistence
-    localStorage.removeItem('studentOnboardingStep')
-    
-    // Navigate to student dashboard
-    navigate("/student/dashboard")
-  }
+      // Map learning style to the correct enum value
+      const learningStyleMap: { [key: string]: LearningStyle } = {
+        'Visual': LearningStyle.VISUAL,
+        'Hands-On': LearningStyle.HANDS_ON,
+        'Theoretical': LearningStyle.THEORETICAL,
+        'Mixed': LearningStyle.MIXED
+      };
+
+      // Transform the data to match Prisma schema
+      const studentDataForSubmit = {
+        age: parseInt(studentData.age),
+        contactNumber: studentData.contactNumber,
+        educationLevel: educationLevelMap[studentData.educationLevel],
+        school: studentData.school,
+        currentYear: parseInt(studentData.currentYear),
+        subjectsOfInterest: studentData.subjectsOfInterest.split(',').map(s => s.trim()).filter(Boolean),
+        preferredLearningStyle: learningStyleMap[studentData.learningStyle[0] || 'Visual'],
+        hasLearningDisabilities: studentData.hasLearningDisabilities,
+        learningAccommodations: studentData.learningDisabilitiesDescription || null
+      };
+
+      // Send data to backend
+      await axios.post(
+        "http://localhost:3000/api/v1/users/student/onboard",
+        studentDataForSubmit,
+        {
+          headers: { 
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      // Save to context and clear form data
+      const contextData: StudentContextData = {
+        fullName: studentData.fullName,
+        email: studentData.email,
+        grade: studentData.educationLevel,
+        subjectsOfInterest: studentData.subjectsOfInterest,
+        learningGoals: studentData.learningStyle.join(", "),
+        availability: ["Monday", "Wednesday", "Friday"],
+        learningStyle: studentData.learningStyle.join(", "),
+      };
+
+      saveStudentData(contextData);
+      clearFormData();
+      localStorage.removeItem('studentOnboardingStep');
+      
+      // Navigate to dashboard
+      navigate("/student/dashboard");
+    } catch (err) {
+      console.error("Failed to complete onboarding:", err);
+      alert("Failed to complete onboarding. Please check your data and try again.");
+    }
+  };
+
+  // Move these render functions inside the component
+  const renderEducationLevelSelect = () => (
+    <Select
+      value={studentData.educationLevel}
+      onValueChange={(value) => handleInputChange("educationLevel", value)}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Select your education level" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="grade-9">Grade 9</SelectItem>
+        <SelectItem value="ordinary-level">Ordinary Level</SelectItem>
+        <SelectItem value="advanced-level">Advanced Level</SelectItem>
+        <SelectItem value="university">University</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+
+  const renderLearningStyleOptions = () => (
+    <div className="grid grid-cols-2 gap-4">
+      {[
+        { value: 'Visual', label: 'Visual Learning' },
+        { value: 'Hands-On', label: 'Hands-On Practice' },
+        { value: 'Theoretical', label: 'Theoretical Study' },
+        { value: 'Mixed', label: 'Mixed Approach' }
+      ].map((style) => (
+        <div key={style.value} className="flex items-center space-x-2">
+          <Checkbox
+            id={style.value}
+            checked={studentData.learningStyle.includes(style.value)}
+            onCheckedChange={(checked) => {
+              const newStyles = checked
+                ? [...studentData.learningStyle, style.value]
+                : studentData.learningStyle.filter(s => s !== style.value);
+              handleInputChange("learningStyle", newStyles);
+            }}
+          />
+          <Label htmlFor={style.value}>{style.label}</Label>
+        </div>
+      ))}
+    </div>
+  );
 
   const renderStep1 = () => (
     <div className="space-y-6">
@@ -209,19 +309,7 @@ export default function StudentOnboarding() {
       <div className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="educationLevel">Current Education Level *</Label>
-          <Select
-            value={studentData.educationLevel}
-            onValueChange={(value) => handleInputChange("educationLevel", value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select your education level" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="grade-9">Grade 9</SelectItem>
-              <SelectItem value="ordinary-level">Ordinary Level</SelectItem>
-              <SelectItem value="advanced-level">Advanced Level</SelectItem>
-            </SelectContent>
-          </Select>
+          {renderEducationLevelSelect()}
         </div>
         <div className="space-y-2">
           <Label htmlFor="school">School *</Label>
@@ -298,18 +386,7 @@ export default function StudentOnboarding() {
 
         <div className="space-y-3">
           <Label>Preferred Learning Style</Label>
-          <div className="grid grid-cols-2 gap-4">
-            {["Visual", "Hands-On", "Theoretical", "Mixed"].map((style) => (
-              <div key={style} className="flex items-center space-x-2">
-                <Checkbox
-                  id={style}
-                  checked={studentData.learningStyle.includes(style)}
-                  onCheckedChange={(checked) => handleLearningStyleChange(style, checked as boolean)}
-                />
-                <Label htmlFor={style}>{style}</Label>
-              </div>
-            ))}
-          </div>
+          {renderLearningStyleOptions()}
         </div>
 
         <div className="space-y-3">

@@ -58,6 +58,18 @@ export const getProfile = async (req: Request, res: Response) => {
   }
 };
 
+export const updateProfile = async (req: Request, res: Response) => {
+  const userId = (req as any).userId;
+  const { email, password, role } = req.body;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+  try {
+    const user = await prisma.user.update({ where: { id: userId }, data: { email, password, role } });
+    res.json({ id: user.id, email: user.email, role: user.role });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update profile', error });
+  }
+};
+
 // Simple JWT auth middleware
 export const requireAuth = (req: Request, res: Response, next: Function) => {
   const authHeader = req.headers.authorization;
