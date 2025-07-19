@@ -1,4 +1,6 @@
-import { useState } from "react";
+"use client"
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -20,6 +22,10 @@ import {
   Target,
   Brain,
   Zap,
+  CheckCircle,
+  TrendingUp,
+  Award,
+  Shield,
   Loader2,
 } from "lucide-react";
 import { useNavigate } from "react-router";
@@ -28,70 +34,105 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts";
 
-const benefits = [
+const features = [
   {
     id: 1,
-    icon: <Brain className="w-8 h-8 text-blue-500" />,
+    icon: <Brain className="w-6 h-6" />,
     title: "AI-Powered Matching",
-    description:
-      "Our intelligent algorithm connects you with the perfect mentor based on your learning style and goals.",
+    description: "Smart algorithm finds your perfect mentor match",
+    gradient: "from-purple-500 to-pink-500",
   },
   {
     id: 2,
-    icon: <Target className="w-8 h-8 text-green-500" />,
+    icon: <Target className="w-6 h-6" />,
     title: "Personalized Learning",
-    description:
-      "Tailored sessions designed specifically for your academic level and subject requirements.",
+    description: "Tailored sessions for your specific needs",
+    gradient: "from-blue-500 to-cyan-500",
   },
   {
     id: 3,
-    icon: <Zap className="w-8 h-8 text-purple-500" />,
+    icon: <Zap className="w-6 h-6" />,
     title: "Instant Booking",
-    description:
-      "Schedule sessions with top mentors in just a few clicks. No waiting, no hassle.",
+    description: "Schedule sessions in just a few clicks",
+    gradient: "from-green-500 to-emerald-500",
   },
   {
     id: 4,
-    icon: <Users className="w-8 h-8 text-orange-500" />,
-    title: "Expert Mentors",
-    description:
-      "Learn from verified professionals and experienced educators in your field of interest.",
+    icon: <Shield className="w-6 h-6" />,
+    title: "Verified Mentors",
+    description: "All mentors are professionally verified",
+    gradient: "from-orange-500 to-red-500",
   },
 ];
 
-const mockSessions = [
+const stats = [
+  { number: "50K+", label: "Active Students", icon: <Users className="w-5 h-5" /> },
+  { number: "2K+", label: "Expert Mentors", icon: <Award className="w-5 h-5" /> },
+  { number: "100K+", label: "Sessions Completed", icon: <CheckCircle className="w-5 h-5" /> },
+  { number: "98%", label: "Success Rate", icon: <TrendingUp className="w-5 h-5" /> },
+];
+
+const mentorHighlights = [
   {
     id: 1,
-    title: "Advanced Biology - Genetics Deep Dive",
-    mentor: "Dr. Sarah Wilson",
-    avatar: "/placeholder.svg?height=40&width=40",
-    duration: "2 hours",
-    price: "$45",
+    name: "Dr. Sarah Chen",
+    subject: "Advanced Biology",
+    avatar: "/placeholder.svg?height=80&width=80",
     rating: 4.9,
-    tags: ["Biology", "Genetics", "A-Level"],
-    students: 127,
+    students: 234,
+    price: 45,
+    badge: "Top Rated",
+    specialty: "Genetics & Molecular Biology",
   },
   {
     id: 2,
-    title: "Physics Fundamentals - Mechanics",
-    mentor: "Prof. Michael Chen",
-    avatar: "/placeholder.svg?height=40&width=40",
-    duration: "2 hours",
-    price: "$40",
+    name: "Prof. Michael Rodriguez",
+    subject: "Physics & Mathematics",
+    avatar: "/placeholder.svg?height=80&width=80",
     rating: 4.8,
-    tags: ["Physics", "Mechanics", "O-Level"],
-    students: 89,
+    students: 189,
+    price: 42,
+    badge: "Most Popular",
+    specialty: "Quantum Physics & Calculus",
   },
   {
     id: 3,
-    title: "Chemistry Lab Techniques",
-    mentor: "Dr. Aisha Patel",
-    avatar: "/placeholder.svg?height=40&width=40",
-    duration: "2 hours",
-    price: "$50",
+    name: "Dr. Aisha Patel",
+    subject: "Chemistry",
+    avatar: "/placeholder.svg?height=80&width=80",
     rating: 5.0,
-    tags: ["Chemistry", "Practical", "A-Level"],
     students: 156,
+    price: 48,
+    badge: "Expert",
+    specialty: "Organic Chemistry",
+  },
+];
+
+const testimonials = [
+  {
+    name: "Maya Johnson",
+    role: "A-Level Student",
+    content: "EduVibe transformed my understanding of biology. My grades improved from C to A* in just 4 months!",
+    avatar: "/placeholder.svg?height=60&width=60",
+    rating: 5,
+    improvement: "+2 Grades",
+  },
+  {
+    name: "Alex Chen",
+    role: "University Student",
+    content:
+      "The AI matching system is incredible. Found the perfect physics mentor who understood exactly what I needed.",
+    avatar: "/placeholder.svg?height=60&width=60",
+    rating: 5,
+    improvement: "40% Better",
+  },
+  {
+    name: "Sarah Williams",
+    role: "O-Level Student",
+    content: "Amazing platform! The mentors are patient, knowledgeable, and the booking system is so easy to use.",
+    avatar: "/placeholder.svg?height=60&width=60",
+    rating: 5,
+    improvement: "Top 10%",
   },
 ];
 
@@ -99,6 +140,7 @@ export default function HomePage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [currentBenefit, setCurrentBenefit] = useState(0);
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
   
   // Form states
   const [loginForm, setLoginForm] = useState({
@@ -115,12 +157,19 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { login, signup, loginWithGoogle, loginWithGitHub, isLoading, error } = useAuth();
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   const nextBenefit = () => {
-    setCurrentBenefit((prev) => (prev + 1) % benefits.length);
+    setCurrentBenefit((prev) => (prev + 1) % features.length);
   };
 
   const prevBenefit = () => {
-    setCurrentBenefit((prev) => (prev - 1 + benefits.length) % benefits.length);
+    setCurrentBenefit((prev) => (prev - 1 + features.length) % features.length);
   };
 
   const handleGetStarted = () => {
@@ -293,13 +342,13 @@ export default function HomePage() {
               <Card className="max-w-md mx-auto transform transition-all duration-500 hover:scale-105">
                 <CardContent className="p-8 text-center">
                   <div className="mb-6 flex justify-center">
-                    {benefits[currentBenefit].icon}
+                    {features[currentBenefit].icon}
                   </div>
                   <h3 className="text-2xl font-bold mb-4">
-                    {benefits[currentBenefit].title}
+                    {features[currentBenefit].title}
                   </h3>
                   <p className="text-gray-600 leading-relaxed">
-                    {benefits[currentBenefit].description}
+                    {features[currentBenefit].description}
                   </p>
                 </CardContent>
               </Card>
@@ -315,9 +364,9 @@ export default function HomePage() {
             </div>
 
             <div className="flex justify-center mt-8 space-x-2">
-              {benefits.map((benefit, index) => (
+              {features.map((feature, index) => (
                 <button
-                  key={benefit.id}
+                  key={`feature-${feature.title}-${index}`}
                   onClick={() => setCurrentBenefit(index)}
                   className={`w-3 h-3 rounded-full transition-all duration-300 ${
                     index === currentBenefit
@@ -344,59 +393,60 @@ export default function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {mockSessions.map((session) => (
+            {mentorHighlights.map((mentor) => (
               <Card
-                key={session.id}
+                key={mentor.id}
                 className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
               >
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-3 mb-4">
                     <Avatar>
-                      <AvatarImage src={session.avatar || "/placeholder.svg"} />
+                      <AvatarImage src={mentor.avatar || "/placeholder.svg"} />
                       <AvatarFallback>
-                        {session.mentor
+                        {mentor.name
                           .split(" ")
                           .map((n) => n[0])
                           .join("")}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-semibold">{session.mentor}</p>
+                      <p className="font-semibold">{mentor.name}</p>
                       <div className="flex items-center space-x-1">
                         <Star className="w-4 h-4 text-yellow-400 fill-current" />
                         <span className="text-sm text-gray-600">
-                          {session.rating}
+                          {mentor.rating}
                         </span>
                       </div>
                     </div>
                   </div>
 
                   <h3 className="text-xl font-bold mb-3 group-hover:text-blue-600 transition-colors">
-                    {session.title}
+                    {mentor.subject}
                   </h3>
 
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {session.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
+                    <Badge variant="secondary" className="text-xs">
+                      {mentor.badge}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {mentor.specialty}
+                    </Badge>
                   </div>
 
                   <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
                     <div className="flex items-center space-x-1">
                       <Clock className="w-4 h-4" />
-                      <span>{session.duration}</span>
+                      <span>Expert Level</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <Users className="w-4 h-4" />
-                      <span>{session.students} students</span>
+                      <span>{mentor.students} students</span>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <span className="text-2xl font-bold text-blue-600">
-                      {session.price}
+                      ${mentor.price}/hr
                     </span>
                     <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
                       Book Session
@@ -405,6 +455,73 @@ export default function HomePage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4">
+              What Our Students Say
+            </h2>
+            <p className="text-xl text-gray-600">
+              Success stories from students who transformed their learning journey
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto">
+            <Card className="overflow-hidden shadow-2xl">
+              <CardContent className="p-8 md:p-12">
+                <div className="text-center">
+                  <div className="flex justify-center mb-6">
+                    {[...Array(testimonials[currentTestimonial].rating)].map((_, i) => (
+                      <Star key={`star-${testimonials[currentTestimonial].name}-${i}`} className="w-6 h-6 text-yellow-400 fill-current" />
+                    ))}
+                  </div>
+                  
+                  <blockquote className="text-xl md:text-2xl text-gray-700 mb-8 italic leading-relaxed">
+                    "{testimonials[currentTestimonial].content}"
+                  </blockquote>
+                  
+                  <div className="flex items-center justify-center space-x-4">
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage src={testimonials[currentTestimonial].avatar} />
+                      <AvatarFallback>
+                        {testimonials[currentTestimonial].name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="text-left">
+                      <p className="font-semibold text-lg">{testimonials[currentTestimonial].name}</p>
+                      <p className="text-gray-600">{testimonials[currentTestimonial].role}</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Badge variant="secondary" className="bg-green-100 text-green-700">
+                          {testimonials[currentTestimonial].improvement}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <div className="flex justify-center mt-8 space-x-2">
+              {testimonials.map((testimonial, index) => (
+                <button
+                  key={`testimonial-${testimonial.name}-${index}`}
+                  onClick={() => setCurrentTestimonial(index)}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    index === currentTestimonial
+                      ? "bg-blue-500 scale-125"
+                      : "bg-gray-300"
+                  }`}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </section>
