@@ -40,8 +40,17 @@ export interface BookedSession {
   mentor: any
   date: string
   time: string
-  status: 'pending' | 'confirmed' | 'completed'
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
   paymentSlip?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MentorAvailability {
+  mentorId: string
+  date: string
+  timeSlots: string[]
+  bookedSlots: string[]
 }
 
 export interface AppState {
@@ -49,8 +58,10 @@ export interface AppState {
   studentData: StudentData | null
   mentorData: MentorData | null
   bookedSessions: BookedSession[]
+  mentorAvailability: MentorAvailability[]
   isLoading: boolean
   error: string | null
+  lastSyncTime: number | null
 }
 
 // Action Types
@@ -62,6 +73,9 @@ export type AppAction =
   | { type: 'ADD_BOOKED_SESSION'; payload: BookedSession }
   | { type: 'UPDATE_BOOKED_SESSION'; payload: { id: string; updates: Partial<BookedSession> } }
   | { type: 'SET_BOOKED_SESSIONS'; payload: BookedSession[] }
+  | { type: 'UPDATE_MENTOR_AVAILABILITY'; payload: MentorAvailability }
+  | { type: 'SET_MENTOR_AVAILABILITY'; payload: MentorAvailability[] }
+  | { type: 'SYNC_DATA'; payload: { timestamp: number } }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'CLEAR_ERROR' }
@@ -72,8 +86,10 @@ const initialState: AppState = {
   studentData: null,
   mentorData: null,
   bookedSessions: [],
+  mentorAvailability: [],
   isLoading: false,
   error: null,
+  lastSyncTime: null,
 }
 
 // Reducer
@@ -91,6 +107,11 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       localStorage.removeItem('studentData')
       localStorage.removeItem('mentorData')
       localStorage.removeItem('bookedSessions')
+      localStorage.removeItem('mentorAvailability')
+      localStorage.removeItem('studentOnboardingData')
+      localStorage.removeItem('studentOnboardingStep')
+      localStorage.removeItem('mentorOnboardingData')
+      localStorage.removeItem('mentorOnboardingStep')
       return {
         ...initialState,
       }
@@ -107,23 +128,61 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         mentorData: action.payload,
       }
     case 'ADD_BOOKED_SESSION': {
-      const newSessions = [...state.bookedSessions, action.payload]
+      // 🔥 CONFLICT PREVENTION: Check if slot is already booked
+      const existingBooking = state.bookedSessions.find(session => 
+        session.mentor.id === action.payload.mentor.id &&
+        session.date === action.payload.date &&
+        session.time === action.payload.time &&
+        session.status !== 'cancelled'
+      )
+      
+      if (existingBooking) {
+        throw new Error('This time slot is already booked. Please choose another time.')
+      }
+      
+      const newSession = {
+        ...action.payload,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+      
+      const newSessions = [...state.bookedSessions, newSession]
       localStorage.setItem('bookedSessions', JSON.stringify(newSessions))
+      
+      // 🔥 REAL-TIME UPDATE: Update mentor availability
+      const updatedAvailability = state.mentorAvailability.map(avail => 
+        avail.mentorId === action.payload.mentor.id && avail.date === action.payload.date
+          ? {
+              ...avail,
+              bookedSlots: [...avail.bookedSlots, action.payload.time]
+            }
+          : avail
+      )
+      
+      localStorage.setItem('mentorAvailability', JSON.stringify(updatedAvailability))
+      
       return {
         ...state,
         bookedSessions: newSessions,
+        mentorAvailability: updatedAvailability,
+        lastSyncTime: Date.now(),
       }
     }
     case 'UPDATE_BOOKED_SESSION': {
       const updatedSessions = state.bookedSessions.map(session =>
         session.id === action.payload.id
-          ? { ...session, ...action.payload.updates }
+          ? { 
+              ...session, 
+              ...action.payload.updates,
+              updatedAt: new Date().toISOString()
+            }
           : session
       )
       localStorage.setItem('bookedSessions', JSON.stringify(updatedSessions))
       return {
         ...state,
         bookedSessions: updatedSessions,
+        lastSyncTime: Date.now(),
       }
     }
     case 'SET_BOOKED_SESSIONS':
@@ -131,6 +190,37 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return {
         ...state,
         bookedSessions: action.payload,
+        lastSyncTime: Date.now(),
+      }
+    case 'UPDATE_MENTOR_AVAILABILITY': {
+      const updatedAvailability = state.mentorAvailability.find(
+        avail => avail.mentorId === action.payload.mentorId && avail.date === action.payload.date
+      )
+        ? state.mentorAvailability.map(avail =>
+            avail.mentorId === action.payload.mentorId && avail.date === action.payload.date
+              ? action.payload
+              : avail
+          )
+        : [...state.mentorAvailability, action.payload]
+      
+      localStorage.setItem('mentorAvailability', JSON.stringify(updatedAvailability))
+      return {
+        ...state,
+        mentorAvailability: updatedAvailability,
+        lastSyncTime: Date.now(),
+      }
+    }
+    case 'SET_MENTOR_AVAILABILITY':
+      localStorage.setItem('mentorAvailability', JSON.stringify(action.payload))
+      return {
+        ...state,
+        mentorAvailability: action.payload,
+        lastSyncTime: Date.now(),
+      }
+    case 'SYNC_DATA':
+      return {
+        ...state,
+        lastSyncTime: action.payload.timestamp,
       }
     case 'SET_LOADING':
       return {
@@ -174,6 +264,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       const savedStudentData = localStorage.getItem('studentData')
       const savedMentorData = localStorage.getItem('mentorData')
       const savedBookedSessions = localStorage.getItem('bookedSessions')
+      const savedMentorAvailability = localStorage.getItem('mentorAvailability')
 
       if (savedUser) {
         dispatch({ type: 'SET_USER', payload: JSON.parse(savedUser) })
@@ -190,6 +281,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       if (savedBookedSessions) {
         dispatch({ type: 'SET_BOOKED_SESSIONS', payload: JSON.parse(savedBookedSessions) })
       }
+
+      if (savedMentorAvailability) {
+        dispatch({ type: 'SET_MENTOR_AVAILABILITY', payload: JSON.parse(savedMentorAvailability) })
+      }
+
+      // Set initial sync time
+      dispatch({ type: 'SYNC_DATA', payload: { timestamp: Date.now() } })
     } catch (error) {
       console.error('Error loading data from localStorage:', error)
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load saved data' })
@@ -216,7 +314,7 @@ export const useAppContext = () => {
 
 // Action Creators (Helper functions)
 export const useAppActions = () => {
-  const { dispatch } = useAppContext()
+  const { dispatch, state } = useAppContext()
 
   return {
     setUser: (user: User) => {
@@ -237,7 +335,12 @@ export const useAppActions = () => {
     },
 
     addBookedSession: (session: BookedSession) => {
-      dispatch({ type: 'ADD_BOOKED_SESSION', payload: session })
+      try {
+        dispatch({ type: 'ADD_BOOKED_SESSION', payload: session })
+      } catch (error) {
+        dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Booking failed' })
+        throw error
+      }
     },
 
     updateBookedSession: (id: string, updates: Partial<BookedSession>) => {
@@ -246,6 +349,34 @@ export const useAppActions = () => {
 
     setBookedSessions: (sessions: BookedSession[]) => {
       dispatch({ type: 'SET_BOOKED_SESSIONS', payload: sessions })
+    },
+
+    updateMentorAvailability: (availability: MentorAvailability) => {
+      dispatch({ type: 'UPDATE_MENTOR_AVAILABILITY', payload: availability })
+    },
+
+    setMentorAvailability: (availabilities: MentorAvailability[]) => {
+      dispatch({ type: 'SET_MENTOR_AVAILABILITY', payload: availabilities })
+    },
+
+    // 🔥 CONFLICT CHECK: Check if a time slot is available before booking
+    checkSlotAvailability: (mentorId: string, date: string, time: string): boolean => {
+      const existingBooking = state.bookedSessions.find(session => 
+        session.mentor.id === mentorId &&
+        session.date === date &&
+        session.time === time &&
+        session.status !== 'cancelled'
+      )
+      return !existingBooking
+    },
+
+    // 🔥 REAL-TIME SYNC: Get latest sync time
+    getLastSyncTime: (): number | null => {
+      return state.lastSyncTime
+    },
+
+    syncData: () => {
+      dispatch({ type: 'SYNC_DATA', payload: { timestamp: Date.now() } })
     },
 
     setLoading: (loading: boolean) => {

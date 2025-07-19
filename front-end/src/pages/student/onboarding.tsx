@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress"
 import { BookOpen, User, GraduationCap, Target } from "lucide-react"
 import { useNavigate } from "react-router"
 import { useAppActions, type StudentData as StudentContextData } from "@/contexts"
+import { useFormPersistence } from "@/hooks/useFormPersistence"
 
 interface LocalStudentData {
   // Part 1: Basic Information
@@ -35,10 +36,25 @@ interface LocalStudentData {
 }
 
 export default function StudentOnboarding() {
-  const [currentStep, setCurrentStep] = useState(1)
+  const [currentStep, setCurrentStep] = useState(() => {
+    // 🔥 STEP PERSISTENCE: Restore step from localStorage
+    try {
+      const savedStep = localStorage.getItem('studentOnboardingStep')
+      return savedStep ? parseInt(savedStep, 10) : 1
+    } catch {
+      return 1
+    }
+  })
+  
   const { setStudentData: saveStudentData } = useAppActions()
   const navigate = useNavigate()
-  const [studentData, setStudentData] = useState<LocalStudentData>({
+
+  // 🔥 FORM PERSISTENCE: Use the new form persistence hook
+  const {
+    data: studentData,
+    updateData: setStudentData,
+    handleSubmit: clearFormData,
+  } = useFormPersistence<LocalStudentData>({
     fullName: "",
     age: "",
     email: "",
@@ -51,10 +67,19 @@ export default function StudentOnboarding() {
     learningStyle: [],
     hasLearningDisabilities: false,
     learningDisabilitiesDescription: "",
+  }, {
+    key: 'studentOnboardingData',
+    debounceMs: 300,
+    clearOnSubmit: true,
   })
 
   const totalSteps = 3
   const progress = (currentStep / totalSteps) * 100
+
+  // 🔥 STEP PERSISTENCE: Save step whenever it changes
+  useEffect(() => {
+    localStorage.setItem('studentOnboardingStep', currentStep.toString())
+  }, [currentStep])
 
   const subjects = studentData.subjectsOfInterest
     .split(",")
@@ -62,21 +87,22 @@ export default function StudentOnboarding() {
     .filter((s) => s)
 
   const handleInputChange = (field: keyof LocalStudentData, value: any) => {
-    setStudentData((prev) => ({ ...prev, [field]: value }))
+    setStudentData({ [field]: value })
   }
 
   const handleSkillLevelChange = (subject: string, level: string) => {
-    setStudentData((prev) => ({
-      ...prev,
-      skillLevels: { ...prev.skillLevels, [subject]: level },
-    }))
+    setStudentData({
+      skillLevels: { ...studentData.skillLevels, [subject]: level }
+    })
   }
 
   const handleLearningStyleChange = (style: string, checked: boolean) => {
-    setStudentData((prev) => ({
-      ...prev,
-      learningStyle: checked ? [...prev.learningStyle, style] : prev.learningStyle.filter((s) => s !== style),
-    }))
+    const currentStyles = studentData.learningStyle || []
+    const newStyles = checked 
+      ? [...currentStyles, style] 
+      : currentStyles.filter((s) => s !== style)
+    
+    setStudentData({ learningStyle: newStyles })
   }
 
   const nextStep = () => {
@@ -98,13 +124,21 @@ export default function StudentOnboarding() {
       email: studentData.email,
       grade: studentData.educationLevel,
       subjectsOfInterest: studentData.subjectsOfInterest,
-      learningGoals: "", // This would need to be added to the form or derived
-      availability: [], // This would need to be added to the form
-      learningStyle: studentData.learningStyle.join(", ")
+      learningGoals: studentData.learningStyle.join(", "),
+      availability: ["Monday", "Wednesday", "Friday"], // Default availability
+      learningStyle: studentData.learningStyle.join(", "),
     }
-    
-    // Save to context
+
+    // Save to global context
     saveStudentData(contextData)
+    
+    // 🔥 CLEAR SAVED FORM DATA: Clear form persistence
+    clearFormData()
+    
+    // Clear step persistence
+    localStorage.removeItem('studentOnboardingStep')
+    
+    // Navigate to student dashboard
     navigate("/student/dashboard")
   }
 

@@ -10,7 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label"
 import { BookOpen, Search, Star, Clock, Users, Calendar, Upload } from "lucide-react"
 import { useNavigate } from "react-router"
-import { useAppContext, useAppActions, useAuth } from "@/contexts"
+import { useAppContext, useAppActions } from "@/contexts"
+import { useNavigationState } from "@/hooks/useNavigationState"
+import { useRealTimeSync, useBookingConflictPrevention } from "@/hooks/useRealTimeSync"
 
 // Enhanced mock mentor data with 15+ mentors
 const mockMentors = [
@@ -250,6 +252,8 @@ const mockBookedSessions: BookedSession[] = [
     time: "14:00",
     status: "confirmed",
     paymentSlip: "bank_slip_001.jpg",
+    createdAt: "2024-01-20T10:00:00Z",
+    updatedAt: "2024-01-20T10:00:00Z",
   },
   {
     id: "2",
@@ -258,6 +262,8 @@ const mockBookedSessions: BookedSession[] = [
     time: "16:00",
     status: "pending",
     paymentSlip: "bank_slip_002.jpg",
+    createdAt: "2024-01-21T14:30:00Z",
+    updatedAt: "2024-01-21T14:30:00Z",
   },
   {
     id: "3",
@@ -266,6 +272,8 @@ const mockBookedSessions: BookedSession[] = [
     time: "10:00",
     status: "confirmed",
     paymentSlip: "bank_slip_003.jpg",
+    createdAt: "2024-01-22T09:15:00Z",
+    updatedAt: "2024-01-22T09:15:00Z",
   },
 ]
 
@@ -276,6 +284,8 @@ interface BookedSession {
   time: string
   status: "pending" | "confirmed" | "completed"
   paymentSlip?: string
+  createdAt: string
+  updatedAt: string
 }
 
 export default function StudentDashboard() {
@@ -286,9 +296,23 @@ export default function StudentDashboard() {
   const [selectedMentor, setSelectedMentor] = useState<any>(null)
   const [selectedDate, setSelectedDate] = useState("")
   const [selectedTime, setSelectedTime] = useState("")
+  
+  // 🔥 NAVIGATION STATE: Use persistent navigation state
+  const { 
+    currentTab: activeTab, 
+    navigateToTab: setActiveTab 
+  } = useNavigationState('studentDashboard', 'explore')
+  
+  // 🔥 REAL-TIME SYNC: Enable real-time updates and conflict prevention
+  const { isDataStale } = useRealTimeSync({
+    syncInterval: 30000, // 30 seconds
+    enableConflictDetection: true,
+  })
+  
+  const { validateBooking, getAvailableSlots } = useBookingConflictPrevention()
+  
   const { state } = useAppContext()
-  const { addBookedSession } = useAppActions()
-  const { logout } = useAuth()
+  const { addBookedSession, setError } = useAppActions()
   const navigate = useNavigate()
 
   const [selectedPriceRange, setSelectedPriceRange] = useState("all")
@@ -298,7 +322,19 @@ export default function StudentDashboard() {
   // Get data from context instead of localStorage
   const studentData = state.studentData
   const bookedSessions = state.bookedSessions
-  const user = state.user
+
+  // 🔥 TIME SLOT FORMATTING: Helper function to format time slots
+  const formatTimeSlot = (time: string): string => {
+    const timeMap: Record<string, string> = {
+      "09:00": "9:00 AM",
+      "11:00": "11:00 AM", 
+      "14:00": "2:00 PM",
+      "16:00": "4:00 PM",
+      "18:00": "6:00 PM",
+      "20:00": "8:00 PM"
+    }
+    return timeMap[time] || time
+  }
 
   useEffect(() => {
     // If no student data in context, redirect to onboarding
@@ -306,6 +342,14 @@ export default function StudentDashboard() {
       navigate("/student/onboarding")
     }
   }, [studentData, navigate])
+
+  // 🔥 SYNC STATUS: Show sync status indicator
+  useEffect(() => {
+    if (isDataStale) {
+      // Could show a notification that data may be outdated
+      console.log('Data may be outdated, consider refreshing')
+    }
+  }, [isDataStale])
 
   const filteredMentors = mockMentors.filter((mentor) => {
     const matchesSearch =
@@ -374,21 +418,43 @@ export default function StudentDashboard() {
   }
 
   const handlePaymentSubmit = () => {
+    const now = new Date().toISOString();
+    
+    // 🔥 CONFLICT PREVENTION: Validate booking before submitting
+    const validation = validateBooking(selectedMentor.id, selectedDate, selectedTime);
+    
+    if (!validation.isValid) {
+      setError(validation.error || "Booking validation failed");
+      setShowPaymentModal(false);
+      return;
+    }
+    
     const newSession: BookedSession = {
       id: Date.now().toString(),
       mentor: selectedMentor,
       date: selectedDate,
       time: selectedTime,
       status: "pending",
+      createdAt: now,
+      updatedAt: now,
     }
 
-    // Add to context instead of local state
-    addBookedSession(newSession)
-
-    setShowPaymentModal(false)
-    setSelectedMentor(null)
-    setSelectedDate("")
-    setSelectedTime("")
+    try {
+      // Add to context with conflict checking
+      addBookedSession(newSession)
+      
+      // 🔥 SUCCESS: Switch to sessions tab to show the new booking
+      setActiveTab("sessions")
+      
+      setShowPaymentModal(false)
+      setSelectedMentor(null)
+      setSelectedDate("")
+      setSelectedTime("")
+    } catch (error) {
+      // Error is already set by the context action, just close modal
+      console.error('Booking failed:', error)
+      setShowPaymentModal(false)
+    }
   }
 
   const renderMentorCard = (mentor: any) => (
@@ -487,9 +553,10 @@ export default function StudentDashboard() {
       <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div
-              className="flex items-center space-x-2 cursor-pointer"
+            <button
+              className="flex items-center space-x-2 cursor-pointer bg-transparent border-none p-0"
               onClick={() => navigate("/")}
+              type="button"
             >
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <BookOpen className="w-5 h-5 text-white" />
@@ -497,7 +564,7 @@ export default function StudentDashboard() {
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 EduVibe
               </span>
-            </div>
+            </button>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">Welcome, {studentData?.fullName || "Student"}</span>
               <Button variant="outline" onClick={() => navigate("/")}>
@@ -514,7 +581,7 @@ export default function StudentDashboard() {
           <p className="text-gray-600">Discover mentors and manage your learning sessions</p>
         </div>
 
-        <Tabs defaultValue="explore" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 max-w-md">
             <TabsTrigger value="explore">Explore Mentors</TabsTrigger>
             <TabsTrigger value="sessions">Booked Sessions</TabsTrigger>
@@ -642,7 +709,7 @@ export default function StudentDashboard() {
                     <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-xl font-semibold mb-2">No sessions booked yet</h3>
                     <p className="text-gray-600 mb-4">Start exploring mentors to book your first session</p>
-                    <Button onClick={() => (document.querySelector('[value="explore"]') as HTMLElement | null)?.click()}>
+                    <Button onClick={() => setActiveTab("explore")}>
                       Explore Mentors
                     </Button>
                   </CardContent>
@@ -717,13 +784,27 @@ export default function StudentDashboard() {
                   <SelectValue placeholder="Choose a time slot" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="09:00">9:00 AM</SelectItem>
-                  <SelectItem value="11:00">11:00 AM</SelectItem>
-                  <SelectItem value="14:00">2:00 PM</SelectItem>
-                  <SelectItem value="16:00">4:00 PM</SelectItem>
-                  <SelectItem value="18:00">6:00 PM</SelectItem>
+                  {selectedDate && selectedMentor ? (
+                    getAvailableSlots(selectedMentor.id, selectedDate).map(time => (
+                      <SelectItem key={time} value={time}>
+                        {formatTimeSlot(time)}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <>
+                      <SelectItem value="09:00">9:00 AM</SelectItem>
+                      <SelectItem value="11:00">11:00 AM</SelectItem>
+                      <SelectItem value="14:00">2:00 PM</SelectItem>
+                      <SelectItem value="16:00">4:00 PM</SelectItem>
+                      <SelectItem value="18:00">6:00 PM</SelectItem>
+                      <SelectItem value="20:00">8:00 PM</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
+              {selectedDate && selectedMentor && getAvailableSlots(selectedMentor.id, selectedDate).length === 0 && (
+                <p className="text-sm text-red-600">No time slots available for this date</p>
+              )}
             </div>
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="text-sm text-gray-600 mb-2">Session Details:</p>
