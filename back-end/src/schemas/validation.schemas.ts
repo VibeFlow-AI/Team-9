@@ -174,6 +174,18 @@ export const CreateBookingSchema = z.object({
   sessionNotes: z.string().max(500, 'Session notes too long').optional()
 })
 
+// Book Session Schema (used for session booking API)
+export const BookSessionSchema = z.object({
+  mentorSessionId: z.string().min(1, 'Mentor session ID is required'),
+  scheduledDateTime: z.string().datetime('Invalid datetime format').transform(
+    (str) => new Date(str)
+  ).refine(
+    (date) => date > new Date(),
+    'Scheduled time must be in the future'
+  ),
+  notes: z.string().max(500, 'Notes too long').optional()
+})
+
 export const UpdateBookingSchema = z.object({
   status: BookingStatusSchema,
   sessionNotes: z.string().max(500, 'Session notes too long').optional()

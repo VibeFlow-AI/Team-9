@@ -1,21 +1,41 @@
-import cors from 'cors';
 import express from 'express';
 import { errorHandler } from './middlewares/errorHandler';
-import itemRoutes from './routes/itemRoutes';
 import { auth } from './lib/auth';
 import { toNodeHandler } from 'better-auth/node';
+import { 
+  helmetConfig, 
+  generalRateLimit, 
+  compressionConfig, 
+  corsConfig 
+} from './config/security.config';
+import { requestLogger, requestIdMiddleware, log } from './config/logger.config';
+import apiRoutes from './routes';
+import cors from 'cors';
 
 const app = express();
 
-// Enable CORS for all routes
-app.use(cors());
+// Configure security middleware
+app.use(helmetConfig);
+app.use(generalRateLimit);
+app.use(compressionConfig);
+app.use(cors(corsConfig));
 
-app.all('/api/auth/{*any}', toNodeHandler(auth));
+// Configure logging
+app.use(requestIdMiddleware);
+app.use(requestLogger);
+
+// Auth routes - Express v5 requires *splat pattern
+app.all('/api/auth/*splat', toNodeHandler(auth));
 
 app.use(express.json());
 
-// Routes
-app.use('/api/items', itemRoutes);
+// API routes with base URL as specified in context.md
+app.use('/api/v1', apiRoutes);
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
 
 // Global error handler (should be after routes)
 app.use(errorHandler);

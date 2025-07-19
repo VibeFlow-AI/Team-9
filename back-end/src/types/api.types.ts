@@ -584,4 +584,143 @@ export interface HealthCheckResponse {
       lastChecked: string
     }>
   }
+}
+
+// Dashboard Types
+export interface StudentDashboard {
+  student: {
+    id: string
+    name: string | null
+    email: string
+    profilePicture?: string | null
+    educationLevel: string
+    school: string
+    subjectsOfInterest: string[]
+    memberSince: Date
+  }
+  statistics: {
+    totalBookings: number
+    completedSessions: number
+    upcomingSessions: number
+    pendingSessions: number
+    totalSpent: number
+    averageSessionRating: number
+  }
+  recentBookings: Array<{
+    id: string
+    mentorName: string | null
+    mentorProfilePicture?: string | null
+    sessionTitle: string
+    subject: string
+    scheduledDateTime: Date
+    status: string
+    amount: number
+    hasReview: boolean
+  }>
+  upcomingSessions: Array<{
+    id: string
+    mentorName: string | null
+    mentorProfilePicture?: string | null
+    sessionTitle: string
+    subject: string
+    scheduledDateTime: Date
+    meetingLink?: string | null
+    notes?: string | null
+  }>
+  favoriteSubjects: Array<{
+    subject: string
+    sessionCount: number
+  }>
+  learningProgress: {
+    completedHours: number
+    subjectProgress: Array<{
+      subject: string
+      currentLevel: string
+      sessionsCompleted: number
+    }>
+  }
+  recommendations: {
+    suggestedMentors: any[]
+    recommendedSessions: any[]
+    learningGoals: Array<{
+      subject: string
+      targetLevel: string
+      estimatedHours: number
+    }>
+  }
+}
+
+export interface MentorDashboard {
+  mentor: {
+    id: string
+    name: string | null
+    email: string
+    profilePicture?: string | null
+    professionalRole: string
+    subjectsToTeach: string[]
+    averageRating?: number | null
+    totalSessions: number
+    memberSince: Date
+    isActive: boolean
+  }
+  statistics: {
+    totalBookings: number
+    completedSessions: number
+    upcomingSessions: number
+    pendingSessions: number
+    totalEarnings: number
+    thisMonthEarnings: number
+    averageRating: number
+    totalStudents: number
+    activeSessions: number
+  }
+  recentBookings: Array<{
+    id: string
+    studentName: string | null
+    studentProfilePicture?: string | null
+    sessionTitle: string
+    subject: string
+    scheduledDateTime: Date
+    status: string
+    amount: number
+    hasReview: boolean
+  }>
+  upcomingSessions: Array<{
+    id: string
+    studentName: string | null
+    studentProfilePicture?: string | null
+    sessionTitle: string
+    subject: string
+    scheduledDateTime: Date
+    meetingLink?: string | null
+    studentNotes?: string | null
+  }>
+  analytics: {
+    monthlyEarnings: Array<{
+      month: string
+      earnings: number
+    }>
+    popularSubjects: Array<{
+      subject: string
+      bookings: number
+    }>
+    studentRetentionRate: number
+    peakHours: any[]
+  }
+  topSessions: Array<{
+    id: string
+    title: string
+    subject: string
+    totalBookings: number
+    averageRating: number
+    price: number
+  }>
+  reviews: Array<{
+    id: string
+    studentName: string | null
+    rating: number
+    comment: string
+    sessionTitle?: string
+    createdAt: Date
+  }>
 } 
