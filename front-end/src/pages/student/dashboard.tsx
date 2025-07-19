@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -13,48 +11,261 @@ import { Label } from "@/components/ui/label"
 import { BookOpen, Search, Star, Clock, Users, Calendar, Upload } from "lucide-react"
 import { useNavigate } from "react-router"
 
-// Mock mentor data
+// Enhanced mock mentor data with 15+ mentors
 const mockMentors = [
   {
     id: 1,
     name: "Dr. Sarah Wilson",
     avatar: "/placeholder.svg?height=60&width=60",
-    subjects: ["Biology", "Genetics"],
+    subjects: ["Biology", "Genetics", "Molecular Biology"],
     experience: "10+ years",
     rating: 4.9,
     students: 127,
     price: 45,
     languages: ["English"],
     levels: ["A-Level", "University"],
-    bio: "Specialized in molecular biology and genetics with extensive research background.",
+    bio: "Specialized in molecular biology and genetics with extensive research background at Cambridge University.",
+    location: "London, UK",
+    availability: ["Monday", "Wednesday", "Friday"],
   },
   {
     id: 2,
     name: "Prof. Michael Chen",
     avatar: "/placeholder.svg?height=60&width=60",
-    subjects: ["Physics", "Mathematics"],
+    subjects: ["Physics", "Mathematics", "Quantum Mechanics"],
     experience: "8+ years",
     rating: 4.8,
     students: 89,
     price: 40,
     languages: ["English", "Chinese"],
     levels: ["O-Level", "A-Level"],
-    bio: "Expert in theoretical physics and advanced mathematics.",
+    bio: "Expert in theoretical physics and advanced mathematics with PhD from MIT.",
+    location: "Singapore",
+    availability: ["Tuesday", "Thursday", "Saturday"],
   },
   {
     id: 3,
     name: "Dr. Aisha Patel",
     avatar: "/placeholder.svg?height=60&width=60",
-    subjects: ["Chemistry", "Biology"],
+    subjects: ["Chemistry", "Biology", "Biochemistry"],
     experience: "12+ years",
     rating: 5.0,
     students: 156,
     price: 50,
     languages: ["English", "Hindi"],
     levels: ["A-Level", "University"],
-    bio: "Renowned chemistry professor with focus on organic chemistry.",
+    bio: "Renowned chemistry professor with focus on organic chemistry and drug discovery.",
+    location: "Mumbai, India",
+    availability: ["Monday", "Tuesday", "Wednesday"],
   },
-  // Add more mock mentors...
+  {
+    id: 4,
+    name: "Prof. James Rodriguez",
+    avatar: "/placeholder.svg?height=60&width=60",
+    subjects: ["Mathematics", "Statistics", "Calculus"],
+    experience: "15+ years",
+    rating: 4.7,
+    students: 203,
+    price: 42,
+    languages: ["English", "Spanish"],
+    levels: ["O-Level", "A-Level", "University"],
+    bio: "Mathematics professor specializing in advanced calculus and statistical analysis.",
+    location: "Barcelona, Spain",
+    availability: ["Monday", "Wednesday", "Friday"],
+  },
+  {
+    id: 5,
+    name: "Dr. Emily Thompson",
+    avatar: "/placeholder.svg?height=60&width=60",
+    subjects: ["English Literature", "Creative Writing", "Linguistics"],
+    experience: "9+ years",
+    rating: 4.9,
+    students: 98,
+    price: 38,
+    languages: ["English"],
+    levels: ["O-Level", "A-Level"],
+    bio: "English literature expert with published works in contemporary fiction analysis.",
+    location: "Toronto, Canada",
+    availability: ["Tuesday", "Thursday", "Sunday"],
+  },
+  {
+    id: 6,
+    name: "Prof. Ahmed Hassan",
+    avatar: "/placeholder.svg?height=60&width=60",
+    subjects: ["Computer Science", "Programming", "AI/ML"],
+    experience: "7+ years",
+    rating: 4.8,
+    students: 145,
+    price: 55,
+    languages: ["English", "Arabic"],
+    levels: ["A-Level", "University"],
+    bio: "Computer science professor specializing in artificial intelligence and machine learning.",
+    location: "Cairo, Egypt",
+    availability: ["Monday", "Tuesday", "Thursday"],
+  },
+  {
+    id: 7,
+    name: "Dr. Lisa Anderson",
+    avatar: "/placeholder.svg?height=60&width=60",
+    subjects: ["Psychology", "Sociology", "Research Methods"],
+    experience: "11+ years",
+    rating: 4.6,
+    students: 87,
+    price: 43,
+    languages: ["English"],
+    levels: ["A-Level", "University"],
+    bio: "Clinical psychologist with expertise in cognitive behavioral therapy and research.",
+    location: "Sydney, Australia",
+    availability: ["Wednesday", "Friday", "Saturday"],
+  },
+  {
+    id: 8,
+    name: "Prof. David Kim",
+    avatar: "/placeholder.svg?height=60&width=60",
+    subjects: ["Economics", "Business Studies", "Finance"],
+    experience: "13+ years",
+    rating: 4.7,
+    students: 134,
+    price: 48,
+    languages: ["English", "Korean"],
+    levels: ["A-Level", "University"],
+    bio: "Economics professor with Wall Street experience in financial markets analysis.",
+    location: "Seoul, South Korea",
+    availability: ["Monday", "Wednesday", "Friday"],
+  },
+  {
+    id: 9,
+    name: "Dr. Maria Gonzalez",
+    avatar: "/placeholder.svg?height=60&width=60",
+    subjects: ["History", "Political Science", "International Relations"],
+    experience: "14+ years",
+    rating: 4.8,
+    students: 112,
+    price: 41,
+    languages: ["English", "Spanish", "Portuguese"],
+    levels: ["O-Level", "A-Level"],
+    bio: "History professor specializing in Latin American politics and international relations.",
+    location: "Mexico City, Mexico",
+    availability: ["Tuesday", "Thursday", "Saturday"],
+  },
+  {
+    id: 10,
+    name: "Prof. Robert Taylor",
+    avatar: "/placeholder.svg?height=60&width=60",
+    subjects: ["Geography", "Environmental Science", "Climate Studies"],
+    experience: "10+ years",
+    rating: 4.5,
+    students: 76,
+    price: 39,
+    languages: ["English"],
+    levels: ["O-Level", "A-Level"],
+    bio: "Environmental scientist with field research experience in climate change studies.",
+    location: "Vancouver, Canada",
+    availability: ["Monday", "Tuesday", "Friday"],
+  },
+  {
+    id: 11,
+    name: "Dr. Priya Sharma",
+    avatar: "/placeholder.svg?height=60&width=60",
+    subjects: ["Physics", "Astronomy", "Astrophysics"],
+    experience: "8+ years",
+    rating: 4.9,
+    students: 91,
+    price: 46,
+    languages: ["English", "Hindi"],
+    levels: ["A-Level", "University"],
+    bio: "Astrophysicist with research experience at NASA and expertise in space exploration.",
+    location: "Bangalore, India",
+    availability: ["Wednesday", "Thursday", "Sunday"],
+  },
+  {
+    id: 12,
+    name: "Prof. Jean-Pierre Dubois",
+    avatar: "/placeholder.svg?height=60&width=60",
+    subjects: ["French", "Literature", "European History"],
+    experience: "16+ years",
+    rating: 4.7,
+    students: 158,
+    price: 44,
+    languages: ["French", "English"],
+    levels: ["O-Level", "A-Level"],
+    bio: "French literature professor with expertise in 19th-century European literary movements.",
+    location: "Paris, France",
+    availability: ["Monday", "Wednesday", "Saturday"],
+  },
+  {
+    id: 13,
+    name: "Dr. Rachel Green",
+    avatar: "/placeholder.svg?height=60&width=60",
+    subjects: ["Art History", "Fine Arts", "Design"],
+    experience: "9+ years",
+    rating: 4.6,
+    students: 73,
+    price: 37,
+    languages: ["English"],
+    levels: ["O-Level", "A-Level"],
+    bio: "Art historian specializing in Renaissance and contemporary art movements.",
+    location: "Florence, Italy",
+    availability: ["Tuesday", "Thursday", "Friday"],
+  },
+  {
+    id: 14,
+    name: "Prof. Hassan Al-Rashid",
+    avatar: "/placeholder.svg?height=60&width=60",
+    subjects: ["Arabic", "Islamic Studies", "Middle Eastern History"],
+    experience: "12+ years",
+    rating: 4.8,
+    students: 95,
+    price: 40,
+    languages: ["Arabic", "English"],
+    levels: ["O-Level", "A-Level", "University"],
+    bio: "Islamic studies scholar with expertise in classical Arabic literature and history.",
+    location: "Dubai, UAE",
+    availability: ["Sunday", "Monday", "Wednesday"],
+  },
+  {
+    id: 15,
+    name: "Dr. Anna Petrov",
+    avatar: "/placeholder.svg?height=60&width=60",
+    subjects: ["Russian", "Slavic Literature", "Eastern European History"],
+    experience: "11+ years",
+    rating: 4.7,
+    students: 67,
+    price: 42,
+    languages: ["Russian", "English"],
+    levels: ["A-Level", "University"],
+    bio: "Slavic literature expert with focus on 20th-century Russian and Eastern European writers.",
+    location: "Moscow, Russia",
+    availability: ["Tuesday", "Thursday", "Saturday"],
+  },
+]
+
+// Add mock booked sessions data
+const mockBookedSessions: BookedSession[] = [
+  {
+    id: "1",
+    mentor: mockMentors[0], // Dr. Sarah Wilson
+    date: "2024-01-25",
+    time: "14:00",
+    status: "confirmed",
+    paymentSlip: "bank_slip_001.jpg",
+  },
+  {
+    id: "2",
+    mentor: mockMentors[2], // Dr. Aisha Patel
+    date: "2024-01-27",
+    time: "16:00",
+    status: "pending",
+    paymentSlip: "bank_slip_002.jpg",
+  },
+  {
+    id: "3",
+    mentor: mockMentors[5], // Prof. Ahmed Hassan
+    date: "2024-01-30",
+    time: "10:00",
+    status: "confirmed",
+    paymentSlip: "bank_slip_003.jpg",
+  },
 ]
 
 interface BookedSession {
@@ -79,6 +290,10 @@ export default function StudentDashboard() {
   const [studentData, setStudentData] = useState<any>(null)
   const navigate = useNavigate()
 
+  const [selectedPriceRange, setSelectedPriceRange] = useState("all")
+  const [selectedRating, setSelectedRating] = useState("all")
+  const [selectedExperience, setSelectedExperience] = useState("all")
+
   useEffect(() => {
     // Load student data from localStorage
     const data = localStorage.getItem("studentData")
@@ -86,19 +301,53 @@ export default function StudentDashboard() {
       setStudentData(JSON.parse(data))
     }
 
-    // Load booked sessions
+    // Load booked sessions or use mock data
     const sessions = localStorage.getItem("bookedSessions")
     if (sessions) {
       setBookedSessions(JSON.parse(sessions))
+    } else {
+      // Use mock data if no sessions exist
+      setBookedSessions(mockBookedSessions)
+      localStorage.setItem("bookedSessions", JSON.stringify(mockBookedSessions))
     }
   }, [])
 
   const filteredMentors = mockMentors.filter((mentor) => {
     const matchesSearch =
       mentor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mentor.subjects.some((subject) => subject.toLowerCase().includes(searchTerm.toLowerCase()))
-    const matchesSubject = !selectedSubject || mentor.subjects.includes(selectedSubject)
-    return matchesSearch && matchesSubject
+      mentor.subjects.some((subject) => subject.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      mentor.bio.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      mentor.location.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchesSubject =
+      selectedSubject === "all" ||
+      mentor.subjects.some((subject) => subject.toLowerCase().includes(selectedSubject.toLowerCase()))
+
+    const matchesPriceRange =
+      selectedPriceRange === "all" ||
+      (selectedPriceRange === "low" && mentor.price <= 40) ||
+      (selectedPriceRange === "medium" && mentor.price > 40 && mentor.price <= 45) ||
+      (selectedPriceRange === "high" && mentor.price > 45)
+
+    const matchesRating =
+      selectedRating === "all" ||
+      (selectedRating === "4+" && mentor.rating >= 4.0) ||
+      (selectedRating === "4.5+" && mentor.rating >= 4.5) ||
+      (selectedRating === "4.8+" && mentor.rating >= 4.8)
+
+    const matchesExperience =
+      selectedExperience === "all" ||
+      (selectedExperience === "5+" && mentor.experience.includes("5+")) ||
+      (selectedExperience === "10+" &&
+        (mentor.experience.includes("10+") ||
+          mentor.experience.includes("11+") ||
+          mentor.experience.includes("12+") ||
+          mentor.experience.includes("13+") ||
+          mentor.experience.includes("14+") ||
+          mentor.experience.includes("15+") ||
+          mentor.experience.includes("16+")))
+
+    return matchesSearch && matchesSubject && matchesPriceRange && matchesRating && matchesExperience
   })
 
   // AI-powered mentor matching based on student interests
@@ -164,6 +413,7 @@ export default function StudentDashboard() {
           <div className="flex-1">
             <h3 className="text-xl font-bold mb-1">{mentor.name}</h3>
             <p className="text-sm text-gray-600 mb-2">{mentor.bio}</p>
+            <p className="text-xs text-gray-500 mb-2">📍 {mentor.location}</p>
             <div className="flex items-center space-x-4 text-sm text-gray-500">
               <div className="flex items-center space-x-1">
                 <Star className="w-4 h-4 text-yellow-400 fill-current" />
@@ -172,6 +422,10 @@ export default function StudentDashboard() {
               <div className="flex items-center space-x-1">
                 <Users className="w-4 h-4" />
                 <span>{mentor.students} students</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Clock className="w-4 h-4" />
+                <span>{mentor.experience}</span>
               </div>
             </div>
           </div>
@@ -194,6 +448,26 @@ export default function StudentDashboard() {
               {mentor.languages.map((lang: string) => (
                 <Badge key={lang} variant="outline">
                   {lang}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-1">Teaching Levels</p>
+            <div className="flex flex-wrap gap-2">
+              {mentor.levels.map((level: string) => (
+                <Badge key={level} variant="outline" className="text-xs">
+                  {level}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-1">Available Days</p>
+            <div className="flex flex-wrap gap-1">
+              {mentor.availability.map((day: string) => (
+                <Badge key={day} variant="secondary" className="text-xs">
+                  {day}
                 </Badge>
               ))}
             </div>
@@ -250,33 +524,97 @@ export default function StudentDashboard() {
           </TabsList>
 
           <TabsContent value="explore" className="space-y-6">
-            {/* Search and Filters */}
+            {/* Enhanced Search and Filters */}
             <Card>
               <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <Input
-                        placeholder="Search mentors or subjects..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
+                <div className="space-y-4">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                          placeholder="Search mentors, subjects, or locations..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
                     </div>
+                    <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                      <SelectTrigger className="w-full md:w-48">
+                        <SelectValue placeholder="Filter by subject" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Subjects</SelectItem>
+                        <SelectItem value="Biology">Biology</SelectItem>
+                        <SelectItem value="Physics">Physics</SelectItem>
+                        <SelectItem value="Chemistry">Chemistry</SelectItem>
+                        <SelectItem value="Mathematics">Mathematics</SelectItem>
+                        <SelectItem value="English">English</SelectItem>
+                        <SelectItem value="Computer Science">Computer Science</SelectItem>
+                        <SelectItem value="Economics">Economics</SelectItem>
+                        <SelectItem value="History">History</SelectItem>
+                        <SelectItem value="Psychology">Psychology</SelectItem>
+                        <SelectItem value="Geography">Geography</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                    <SelectTrigger className="w-full md:w-48">
-                      <SelectValue placeholder="Filter by subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Subjects</SelectItem>
-                      <SelectItem value="Biology">Biology</SelectItem>
-                      <SelectItem value="Physics">Physics</SelectItem>
-                      <SelectItem value="Chemistry">Chemistry</SelectItem>
-                      <SelectItem value="Mathematics">Mathematics</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Select value={selectedPriceRange} onValueChange={setSelectedPriceRange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Price Range" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Prices</SelectItem>
+                        <SelectItem value="low">$35-40</SelectItem>
+                        <SelectItem value="medium">$41-45</SelectItem>
+                        <SelectItem value="high">$46+</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={selectedRating} onValueChange={setSelectedRating}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Minimum Rating" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Ratings</SelectItem>
+                        <SelectItem value="4+">4.0+ Stars</SelectItem>
+                        <SelectItem value="4.5+">4.5+ Stars</SelectItem>
+                        <SelectItem value="4.8+">4.8+ Stars</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={selectedExperience} onValueChange={setSelectedExperience}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Experience" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Experience</SelectItem>
+                        <SelectItem value="5+">5+ Years</SelectItem>
+                        <SelectItem value="10+">10+ Years</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm text-gray-600">
+                    <span>
+                      Showing {filteredMentors.length} of {mockMentors.length} mentors
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSearchTerm("")
+                        setSelectedSubject("all")
+                        setSelectedPriceRange("all")
+                        setSelectedRating("all")
+                        setSelectedExperience("all")
+                      }}
+                    >
+                      Clear Filters
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -307,7 +645,7 @@ export default function StudentDashboard() {
                     <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-xl font-semibold mb-2">No sessions booked yet</h3>
                     <p className="text-gray-600 mb-4">Start exploring mentors to book your first session</p>
-                    <Button onClick={() => (document.querySelector('[value="explore"]') as HTMLButtonElement | null)?.click()}>
+                    <Button onClick={() => (document.querySelector('[value="explore"]') as HTMLElement | null)?.click()}>
                       Explore Mentors
                     </Button>
                   </CardContent>
