@@ -9,7 +9,7 @@ on:
 jobs:
   deploy:
     name: Deploy to Vibeflow-Server
-    runs-on: [self-hosted, vibeflow-server]
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
