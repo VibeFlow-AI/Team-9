@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
+// This is your Prisma schema file for EduVibe
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
   provider = "prisma-client-js"
@@ -14,48 +11,269 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Item {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// Enums for various fields
+enum UserRole {
+  STUDENT
+  MENTOR
+  ADMIN
 }
 
+enum EducationLevel {
+  GRADE_9
+  ORDINARY_LEVEL
+  ADVANCED_LEVEL
+  UNIVERSITY
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum LearningStyle {
+  VISUAL
+  HANDS_ON
+  THEORETICAL
+  MIXED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum Language {
+  ENGLISH
+  SINHALA
+  TAMIL
+  OTHER
+}
+
+enum Experience {
+  NONE
+  ONE_TO_THREE_YEARS
+  THREE_TO_FIVE_YEARS
+  FIVE_PLUS_YEARS
+}
+
+// Core User model with role-based authentication
 model User {
-  id            String    @id @map("_id")
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
   name          String
-  email         String
-  emailVerified Boolean
+  email         String    @unique
+  emailVerified Boolean   @default(false)
   image         String?
-  createdAt     DateTime
-  updatedAt     DateTime
+  role          UserRole
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
   sessions      Session[]
   accounts      Account[]
+  student       Student?
+  mentor        Mentor?
 
-  @@unique([email])
-  @@map("user")
+  @@map("users")
+}
+
+// Student-specific information and onboarding data
+model Student {
+  id                    String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String         @unique @db.ObjectId
+  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  age                   Int
+  contactNumber         String
+  
+  educationLevel        EducationLevel
+  school                String
+  currentYear           Int
+  
+  subjectsOfInterest    String[]       // Array of subject names
+  preferredLearningStyle LearningStyle
+  hasLearningDisabilities Boolean      @default(false)
+  learningAccommodations String?       // Description if needed
+  
+  subjectSkills         SubjectSkill[]
+  
+  bookings              Booking[]
+  reviews               Review[]
+  
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@map("students")
+}
+
+// Mentor-specific information and profile data
+model Mentor {
+  id                    String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String         @unique @db.ObjectId
+  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  age                   Int
+  contactNumber         String
+  preferredLanguage     Language
+  currentLocation       String
+  shortBio              String
+  professionalRole      String
+  
+  subjectsToTeach       String[]       // Array of subject names
+  teachingExperience    Experience
+  preferredStudentLevels EducationLevel[]
+  
+  linkedinProfile       String         // Mandatory
+  githubPortfolio       String?        // Optional
+  profilePictureUrl     String?
+  
+  averageRating         Float?
+  totalSessions         Int            @default(0)
+  isActive              Boolean        @default(true)
+  
+  mentorSessions        MentorSession[]
+  bookings              Booking[]
+  reviews               Review[]
+  
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@map("mentors")
+}
+
+model SubjectSkill {
+  id         String     @id @default(auto()) @map("_id") @db.ObjectId
+  studentId  String     @db.ObjectId
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject    String
+  skillLevel SkillLevel
+  
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@unique([studentId, subject])
+  @@map("subject_skills")
+}
+
+model MentorSession {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  mentorId          String    @db.ObjectId
+  mentor            Mentor    @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  
+  title             String
+  description       String
+  subject           String
+  tags              String[]  // Subject tags for filtering
+  duration          Int       @default(120) // Fixed 2 hours in minutes
+  price             Float     // Session price
+  maxStudents       Int       @default(1)   // Usually 1-on-1
+  
+  isActive          Boolean   @default(true)
+  availableSlots    DateTime[] // Available time slots
+  
+  totalBookings     Int       @default(0)
+  averageRating     Float?
+  
+  bookings          Booking[]
+  reviews           Review[]
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("mentor_sessions")
+}
+
+model Booking {
+  id                String        @id @default(auto()) @map("_id") @db.ObjectId
+  studentId         String        @db.ObjectId
+  student           Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  mentorId          String        @db.ObjectId
+  mentor            Mentor        @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  mentorSessionId   String        @db.ObjectId
+  mentorSession     MentorSession @relation(fields: [mentorSessionId], references: [id], onDelete: Cascade)
+  
+  scheduledDateTime DateTime
+  status            BookingStatus @default(PENDING)
+  sessionNotes      String?       // Notes for the session
+  
+  payment           Payment?
+  review            Review?
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@map("bookings")
+}
+
+model Payment {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId       String        @unique @db.ObjectId
+  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  amount          Float
+  currency        String        @default("USD")
+  status          PaymentStatus @default(PENDING)
+  
+  bankSlipUrl     String?       // URL to uploaded bank slip
+  bankSlipName    String?       // Original filename
+  
+  verifiedAt      DateTime?
+  verifiedBy      String?       // Admin who verified
+  rejectionReason String?       // If rejected
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("payments")
+}
+
+model Review {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId       String        @unique @db.ObjectId
+  booking         Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  studentId       String        @db.ObjectId
+  student         Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  mentorId        String        @db.ObjectId
+  mentor          Mentor        @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  mentorSessionId String        @db.ObjectId
+  mentorSession   MentorSession @relation(fields: [mentorSessionId], references: [id], onDelete: Cascade)
+  
+  rating          Int           // 1-5 stars
+  comment         String?
+  isPublic        Boolean       @default(true)
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("reviews")
 }
 
 model Session {
-  id        String   @id @map("_id")
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   expiresAt DateTime
-  token     String
-  createdAt DateTime
-  updatedAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   ipAddress String?
   userAgent String?
-  userId    String
+  userId    String   @db.ObjectId
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([token])
-  @@map("session")
+  @@map("sessions")
 }
 
 model Account {
-  id                    String    @id @map("_id")
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
   accountId             String
   providerId            String
-  userId                String
+  userId                String    @db.ObjectId
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
   refreshToken          String?
@@ -64,19 +282,28 @@ model Account {
   refreshTokenExpiresAt DateTime?
   scope                 String?
   password              String?
-  createdAt             DateTime
-  updatedAt             DateTime
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
-  @@map("account")
+  @@map("accounts")
 }
 
 model Verification {
-  id         String    @id @map("_id")
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
   identifier String
   value      String
   expiresAt  DateTime
-  createdAt  DateTime?
-  updatedAt  DateTime?
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
 
-  @@map("verification")
+  @@map("verifications")
+}
+
+model Item {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("items")
 }
