@@ -1,13 +1,9 @@
-import { Router } from 'express'
-import {
-  getStudentDashboard,
-  getMentorDashboard
-} from '../controllers/dashboardController'
+import { Router } from 'express';
+import * as dashboardController from '../controllers/dashboardController';
 
-const router = Router()
+const router = Router();
 
-// Dashboard endpoints
-router.get('/student/:id', getStudentDashboard)
-router.get('/mentor/:id', getMentorDashboard)
+router.get('/student/:id', dashboardController.getStudentDashboard);
+router.get('/mentor/:id', dashboardController.getMentorDashboard);
 
-export default router 
+export default router; 

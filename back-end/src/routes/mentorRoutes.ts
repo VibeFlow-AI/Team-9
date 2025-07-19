@@ -1,23 +1,11 @@
-import { Router } from 'express'
-import {
-  getMentorProfile,
-  onboardMentor,
-  updateMentorProfile,
-  getMentorSessions,
-  createMentorSession,
-  getAllMentorSessions
-} from '../controllers/mentorController'
+import { Router } from 'express';
+import * as mentorController from '../controllers/mentorController';
 
-const router = Router()
+const router = Router();
 
-// Mentor profile endpoints
-router.get('/:id', getMentorProfile)
-router.post('/onboard', onboardMentor)
-router.put('/:id', updateMentorProfile)
+router.get('/:id', mentorController.getMentorProfile);
+router.post('/onboard', mentorController.onboardMentor);
+router.put('/:id', mentorController.updateMentorProfile);
+router.get('/:id/sessions', mentorController.listMentorSessions);
 
-// Mentor sessions
-router.get('/:id/sessions', getMentorSessions)
-router.post('/sessions', createMentorSession)
-router.get('/sessions/all', getAllMentorSessions)
-
-export default router 
+export default router; 

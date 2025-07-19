@@ -8,7 +8,7 @@ import {
   compressionConfig, 
   corsConfig 
 } from './config/security.config';
-import { requestLogger, requestIdMiddleware, log } from './config/logger.config';
+import { requestLogger, requestIdMiddleware } from './config/logger.config';
 import apiRoutes from './routes';
 import cors from 'cors';
 

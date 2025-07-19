@@ -1,21 +1,12 @@
-import { Router } from 'express'
-import {
-  bookSession,
-  getSessionDetails,
-  uploadBankSlip,
-  getStudentSessions,
-  getMentorSessions
-} from '../controllers/sessionController'
+import { Router } from 'express';
+import * as sessionController from '../controllers/sessionController';
 
-const router = Router()
+const router = Router();
 
-// Session booking endpoints
-router.post('/book', bookSession)
-router.get('/:id', getSessionDetails)
-router.put('/:id/upload', uploadBankSlip)
+router.post('/book', sessionController.bookSession);
+router.get('/:id', sessionController.getSessionDetails);
+router.put('/:id/upload', sessionController.uploadBankSlip);
+router.get('/student/:id', sessionController.getStudentSessions);
+router.get('/mentor/:id', sessionController.getMentorSessions);
 
-// User-specific sessions
-router.get('/student/:id', getStudentSessions)
-router.get('/mentor/:id', getMentorSessions)
-
-export default router 
+export default router; 

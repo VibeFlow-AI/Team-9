@@ -2,6 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 import morgan from 'morgan';
 import kleur from 'kleur';
 
+// Custom type for request with id
+interface RequestWithId extends Request {
+  id?: string;
+  startAt?: [number, number];
+}
+
 // Custom timestamp formatter
 const formatTimestamp = () => {
   const now = new Date();
@@ -23,7 +29,7 @@ const formatTimestamp = () => {
 // Create custom morgan token for response time in milliseconds
 morgan.token('response-time', (req: Request, res: Response) => {
   if (!res.header) return '0';
-  const startTime = (req as any).startAt;
+  const startTime = (req as RequestWithId).startAt;
   if (!startTime) return '0';
   const diff = process.hrtime(startTime);
   const ms = diff[0] * 1e3 + diff[1] * 1e-6;
@@ -34,7 +40,7 @@ morgan.token('response-time', (req: Request, res: Response) => {
 export const logger = morgan(':method :url :status :response-time', {
   stream: {
     write: (message: string) => {
-      const [method, url, status, responseTime] = message.trim().split(' ');
+      const [method, url, status] = message.trim().split(' ');
       const timestamp = formatTimestamp();
 
       // Color coding based on status
@@ -65,19 +71,19 @@ export const logger = morgan(':method :url :status :response-time', {
 
 // Custom console logger for non-HTTP logs
 export const log = {
-  info: (message: string, ...args: any[]) => {
+  info: (message: string, ...args: unknown[]) => {
     console.log(kleur.gray(formatTimestamp()), kleur.blue('INFO'), message, ...args);
   },
-  success: (message: string, ...args: any[]) => {
+  success: (message: string, ...args: unknown[]) => {
     console.log(kleur.gray(formatTimestamp()), kleur.green('SUCCESS'), message, ...args);
   },
-  warn: (message: string, ...args: any[]) => {
+  warn: (message: string, ...args: unknown[]) => {
     console.log(kleur.gray(formatTimestamp()), kleur.yellow('WARN'), message, ...args);
   },
-  error: (message: string, ...args: any[]) => {
+  error: (message: string, ...args: unknown[]) => {
     console.log(kleur.gray(formatTimestamp()), kleur.red('ERROR'), message, ...args);
   },
-  debug: (message: string, ...args: any[]) => {
+  debug: (message: string, ...args: unknown[]) => {
     if (process.env.NODE_ENV !== 'production') {
       console.log(kleur.gray(formatTimestamp()), kleur.cyan('DEBUG'), message, ...args);
     }
@@ -87,8 +93,9 @@ export const log = {
 // Backward compatibility - alias for existing code
 export const Logger = log;
 export const requestLogger = logger;
-export const requestIdMiddleware = (req: any, res: any, next: any) => {
-  req.id = Math.random().toString(36).substring(2, 15);
-  res.setHeader('X-Request-ID', req.id);
+export const requestIdMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  (req as RequestWithId).id = Math.random().toString(36).substring(2, 15);
+  const id = (req as RequestWithId).id || '';
+  res.setHeader('X-Request-ID', id);
   next();
 }; 

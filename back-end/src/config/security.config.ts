@@ -1,7 +1,7 @@
 import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import compression from 'compression'
-import { Request } from 'express'
+import { Request, Response, NextFunction } from 'express'
 
 // Helmet security configuration
 export const helmetConfig = helmet({
@@ -154,7 +154,7 @@ export const corsConfig = {
 }
 
 // Security headers middleware
-export const securityHeaders = (req: Request, res: any, next: any) => {
+export const securityHeaders = (req: Request, res: Response, next: NextFunction) => {
   // Remove server header
   res.removeHeader('X-Powered-By')
   
@@ -172,7 +172,7 @@ export const securityHeaders = (req: Request, res: any, next: any) => {
 
 // IP whitelist for admin operations (optional)
 export const adminIPWhitelist = (allowedIPs: string[] = []) => {
-  return (req: Request, res: any, next: any) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     if (process.env.NODE_ENV === 'development') {
       return next() // Skip in development
     }

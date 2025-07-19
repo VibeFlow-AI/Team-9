@@ -186,7 +186,7 @@ export const deleteFile = (filePath: string): void => {
 }
 
 // Error handler for multer
-export const handleMulterError = (error: any) => {
+export const handleMulterError = (error: unknown) => {
   if (error instanceof multer.MulterError) {
     switch (error.code) {
       case 'LIMIT_FILE_SIZE':
@@ -199,7 +199,10 @@ export const handleMulterError = (error: any) => {
         return 'File upload error'
     }
   }
-  return error.message || 'Unknown upload error'
+  if (typeof error === 'object' && error && 'message' in error) {
+    return (error as { message?: string }).message || 'Unknown upload error';
+  }
+  return 'Unknown upload error';
 }
 
 // Export constants for use in other modules
