@@ -42,7 +42,7 @@ export const getItemById = async (
   next: NextFunction,
 ) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = req.params.id;
     const item = await prisma.item.findUnique({
       where: { id },
     });
@@ -63,7 +63,7 @@ export const updateItem = async (
   next: NextFunction,
 ) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = req.params.id;
     const { name } = req.body;
 
     const item = await prisma.item.update({
@@ -88,7 +88,7 @@ export const deleteItem = async (
   next: NextFunction,
 ) => {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = req.params.id;
 
     const deletedItem = await prisma.item.delete({
       where: { id },
